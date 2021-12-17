@@ -31,8 +31,12 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets
 import torchvision
-from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import StratifiedKFold
+
+import wandb
+wandb.login()
+
+from torch.utils.tensorboard import SummaryWriter
 
 import utils.utils as utils
 from utils.logger import init_logger
@@ -73,6 +77,9 @@ class Trainer():
             os.makedirs(osp.join(self.REPO_EXPERIENCE, "weight"), exist_ok = True)
         
             shutil.copy(config_file, osp.join(self.REPO_EXPERIENCE, "train"))
+
+        self.run = wandb.init(project=self.config.wandb.name_project,
+                                name=config_file.split('/')[-1].split('.')[0])
 
         ##############################
         #####  PREPARATION TRAIN #####
@@ -246,9 +253,9 @@ class Trainer():
             logger.info(f'Average Accuracy on {k} Fold: {average}')
 
         else:
-            self.writer = SummaryWriter(log_dir = osp.join(self.REPO_EXPERIENCE, "train"))
+            # self.writer = SummaryWriter(log_dir = osp.join(self.REPO_EXPERIENCE, "train"))
             self.train_epoch(train_loader, val_loader, relaunch = args["--relaunch"])
-            self.writer.close()
+            # self.writer.close()
 
     def train(self, epoch, train_loader):
         
@@ -260,10 +267,9 @@ class Trainer():
             
             if self.config.get("task") == "object_detection":
                 images = list(image.to(self.device) for image in data)
-                targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
-                breakpoint()
+                targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets] # probleme si image avec 0 bounding boxes
+
                 loss_dict = self.model(images, targets)
-                breakpoint()
                 loss = sum(l for l in loss_dict.values())
             else:
                 data, targets = data.to(self.device), targets.to(self.device)
@@ -360,10 +366,10 @@ class Trainer():
                     if self.config.configs.get('k_folds'): 
                         self.results_k_folds[str(self.fold)].append(acc_val)
                     else:
-                        self.update_tensorboard(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
+                        self.update_wandb(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
                     acc_val_previous = acc_val
                 else:
-                    if not self.config.configs.get('k_folds'): self.update_tensorboard(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
+                    if not self.config.configs.get('k_folds'): self.update_wandb(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
                 
                 ##### Early stopping
                 if self.config.configs.get('early_stopping'):
@@ -398,21 +404,37 @@ class Trainer():
             self.checkpoint(real_epoch)
 
     def update_tensorboard(self, current_epoch, loss_train, accuracy_train, loss_val= None, accuracy_val = None):
-        
-        if not self.config.get('checkpoint'):  
-            self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-            self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
-            self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
-            self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
-        elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
-            self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-            self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
-            self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
-            self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
-        else:
-            self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-            self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+        pass
+        # if not self.config.get('checkpoint'):  
+        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+        #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
+        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+        #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
+        # elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
+        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+        #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
+        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+        #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
+        # else:
+        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
     
+    def update_wandb(self, current_epoch, loss_train, accuracy_train, loss_val= None, accuracy_val = None):
+        self.run.log()
+        if not self.config.get('checkpoint'):  
+            self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
+            self.run.log({'val_loss': loss_val, 'epoch': current_epoch-1})
+            self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
+            self.run.log({'val_accuracy': accuracy_val, 'epoch': current_epoch-1})
+        elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
+            self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
+            self.run.log({'val_loss': loss_val, 'epoch': current_epoch-1})
+            self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
+            self.run.log({'val_accuracy': accuracy_val, 'epoch': current_epoch-1})
+        else:
+            self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
+            self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
+
     def save_weights(self, epoch = None, fold = None):
         name = "weight"
         if epoch is not None: name += f"_{epoch}"
@@ -433,7 +455,7 @@ class Trainer():
 
 if __name__ == '__main__':
     args = docopt(__doc__) 
-    
+
     logger = init_logger("Train", args['--log'])
 
     Trainer(args['<yaml_file>'])

@@ -2,6 +2,9 @@ comment: Commentaire sur l'entraînement
 
 task: object_detection
 
+wandb:
+  name_project: "COTS_detection"
+
 data:
   csv_file: /home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train.csv
   root_path: /home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train_images

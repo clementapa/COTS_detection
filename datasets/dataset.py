@@ -35,7 +35,7 @@ class ReefDataset(Dataset):
             df = df[(df.video_id == 0) | (df.video_id == 1)]
         else: 
             df = df[(df.video_id == 2)]
-            
+
         df = df[['video_id', 'video_frame', 'annotations']]
         self.img_annotations = df
 
@@ -61,10 +61,14 @@ class ReefDataset(Dataset):
         for box in bounding_boxes:
             boxes.append([box['x'], box['y'], box['x']+box['width'], box['y']+box['height']])
         
-        # convert everything into a torch.Tensor
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        # there is only one class
-        labels = torch.ones(((boxes.shape[0]),), dtype=torch.int64)
+        if boxes == []: 
+            boxes = torch.zeros((0, 4), dtype=torch.float32) 
+            labels = torch.zeros((1, 1), dtype=torch.int64)
+        else:
+            # convert everything into a torch.Tensor
+            boxes = torch.as_tensor(boxes, dtype=torch.float32)
+            # there is only one class
+            labels = torch.ones(((boxes.shape[0]),), dtype=torch.int64)
 
         target = {}
         target["boxes"] = boxes
