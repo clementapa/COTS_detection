@@ -27,6 +27,7 @@ Note: the test set keeps the temporality!\
 Maybe try (Sparse RCNN and others)
 ### Learning methods 
      - [ ] Unsupervised pre-training (Up-detr)
+     - [ ] Self-supervised training for video (task: determine if the frames of a sequence are correctly ordonate)
      - [ ] Use external dataset for pre-training (Underwater dataset, Camouflaged dataset)
 
 ## Notes

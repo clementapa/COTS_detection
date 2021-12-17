@@ -1,0 +1,36 @@
+comment: Commentaire sur l'entraînement
+
+configs:
+  epoch: 1
+  batch_size: 64
+  seed: 1
+  k_folds: 2
+
+model: 
+  name: model.Model.ResNet
+  params:
+      freeze: True
+
+criterion: 
+  name: torch.nn.CrossEntropyLoss
+  params:
+    reduction: mean
+    
+optimizer:
+  name:  torch.optim.SGD
+  params :
+    lr: 0.001
+    momentum : 0.5
+    # nesterov : True
+
+scheduler:
+  name: torch.optim.lr_scheduler.MultiStepLR
+  params:
+    milestones:
+      - 500
+    gamma: 0.1
+
+# checkpoint:
+#   test_step: 1          # on évalue le modèle sur la base de test toute les n epoch
+#   save_weight_step: 10 # sauvegarde des poids du modèle toute les n epoch
+#   checkpoint_step: 10  # checkpoint pour recommencer l'entraînement
