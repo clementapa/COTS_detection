@@ -6,19 +6,19 @@ wandb:
   name_project: "COTS_detection"
 
 data:
-  csv_file: /home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train.csv
-  root_path: /home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train_images
+  csv_file: /tensorflow-great-barrier-reef/train.csv
+  root_path: /tensorflow-great-barrier-reef/train_images
 
 configs:
-  epoch: 10
+  epoch: 5
   batch_size: 12
   seed: 1
 
 model:
   name: model.Model.FasterRCNN
   params:
-    pretrained: False
-    pretrained_backbone: False
+    pretrained: True
+    pretrained_backbone: True
 
 # criterion:
 #   task1: classification

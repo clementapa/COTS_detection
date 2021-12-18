@@ -27,7 +27,7 @@ class RandomHorizontalFlip(object):
                 bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
                 target["boxes"] = bbox
         return image, target
-        
+
 
 class ToTensor(object):
     def __call__(self, image, target):

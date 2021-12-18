@@ -265,6 +265,8 @@ class Trainer():
 
         for batch_idx, (data, targets) in enumerate(train_loader): 
             
+            self.optimizer.zero_grad()
+
             if self.config.get("task") == "object_detection":
                 images = list(image.to(self.device) for image in data)
                 targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets] # probleme si image avec 0 bounding boxes
@@ -280,7 +282,6 @@ class Trainer():
                 correct += pred.eq(targets.data.view_as(pred)).cpu().sum()
 
             # backpropagation
-            self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
@@ -307,14 +308,21 @@ class Trainer():
         correct = 0
 
         with torch.no_grad():
-            for data, target in val_loader: #tqdm(val_loader, position = 1, desc = "Validation", leave = False):
+            for data, targets in val_loader: #tqdm(val_loader, position = 1, desc = "Validation", leave = False):
             
-                data, target = data.to(self.device), target.to(self.device)
-                output = self.model(data)
+                if self.config.get("task") == "object_detection":
+                    images = list(image.to(self.device) for image in data)
+                    targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets] # probleme si image avec 0 bounding boxes
 
-                validation_loss += self.criterion(output, target).data.item()
-                pred = output.data.max(1, keepdim=True)[1]
-                correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+                    loss_dict = self.model(images, targets)
+                    loss = sum(l for l in loss_dict.values())
+                else:
+                    data, targets = data.to(self.device), targets.to(self.device)
+                    output = self.model(data)
+
+                    validation_loss += self.criterion(output, targets).data.item()
+                    pred = output.data.max(1, keepdim=True)[1]
+                    correct += pred.eq(targets.data.view_as(pred)).cpu().sum()
 
         validation_loss /= len(val_loader)
         logger.info('Validation set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
