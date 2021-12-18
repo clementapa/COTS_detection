@@ -267,7 +267,7 @@ class Trainer():
         train_loss = 0
         correct = 0
 
-        for batch_idx, (data, targets) in enumerate(train_loader): 
+        for batch_idx, (data, targets) in enumerate(tqdm(train_loader, position = 1, desc = "Train", leave = False)): 
             
             self.optimizer.zero_grad()
 
@@ -312,7 +312,7 @@ class Trainer():
         correct = 0
 
         with torch.no_grad():
-            for data, targets in val_loader: #tqdm(val_loader, position = 1, desc = "Validation", leave = False):
+            for data, targets in tqdm(val_loader, position = 1, desc = "Validation", leave = False):
             
                 if self.config.get("task") == "object_detection":
                     images = list(image.to(self.device) for image in data)
