@@ -6,8 +6,8 @@ wandb:
   name_project: "COTS_detection"
 
 data:
-  csv_file: /tensorflow-great-barrier-reef/train.csv
-  root_path: /tensorflow-great-barrier-reef/train_images
+  csv_file: /kaggle/input/tensorflow-great-barrier-reef/train.csv
+  root_path: /kaggle/input/tensorflow-great-barrier-reef/train_images
 
 configs:
   epoch: 5
