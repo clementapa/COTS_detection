@@ -65,7 +65,7 @@ class Trainer():
             if not os.path.isdir(self.REPO_EXPERIENCE):
                 os.makedirs(self.REPO_EXPERIENCE)
             else :
-                if ars['--remove']:
+                if args['--remove']:
                     remove = True
                 else:
                     logger.warning("The repository " + self.REPO_EXPERIENCE + " already exists !")
