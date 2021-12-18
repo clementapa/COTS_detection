@@ -17,6 +17,7 @@ Options:
     --relaunch = NB_FOIS_RELAUNCH       If you want to relaunch the training to do more epoch
     --num_workers = W                   [default: 1]
     --visualise_data
+    --remove
 """
 
 import yaml
@@ -64,9 +65,12 @@ class Trainer():
             if not os.path.isdir(self.REPO_EXPERIENCE):
                 os.makedirs(self.REPO_EXPERIENCE)
             else :
-                logger.warning("The repository " + self.REPO_EXPERIENCE + " already exists !")
-                if (input("The repository " + self.REPO_EXPERIENCE + " will be delete. If you don't want to continue CTRL + C")!='n'):
+                if ars['--remove']:
                     remove = True
+                else:
+                    logger.warning("The repository " + self.REPO_EXPERIENCE + " already exists !")
+                    if (input("The repository " + self.REPO_EXPERIENCE + " will be delete. If you don't want to continue CTRL + C")!='n'):
+                        remove = True
                 if remove :
                     shutil.rmtree(self.REPO_EXPERIENCE)
                     logger.warning("The repository " + self.REPO_EXPERIENCE + " was deleted")
