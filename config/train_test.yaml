@@ -11,6 +11,7 @@ data:
 
 configs:
   epoch: 20
+  it: 200
   batch_size: 10
   seed: 1
 
@@ -24,4 +25,4 @@ optimizer:
   name: torch.optim.SGD
   params:
     lr: 0.001
-    momentum : 0.5
+    momentum : 0.9

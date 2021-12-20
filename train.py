@@ -12,19 +12,18 @@ Options:
     -h                                  Display help
     --log = LEVEL_LOG                   Level of log [default: DEBUG]
     --experiment = REPO                 folder where experiment outputs are located [default: Experiment]
-    --log-interval = IT                 how many batches to wait before logging training status 
     --checkpoint                        If the training crashed and you want to relaunch with checkpoint
     --relaunch = NB_FOIS_RELAUNCH       If you want to relaunch the training to do more epoch
     --num_workers = W                   [default: 1]
-    --visualise_data
     --remove
+    --notebook                          tqdm for notebook
 """
 
 import yaml
 import os, os.path as osp
 from docopt import docopt
 from easydict import EasyDict
-from tqdm import tqdm
+from tqdm import tqdm, notebook.tqdm
 import shutil
 import numpy as np
 import matplotlib.pyplot as plt
@@ -270,11 +269,16 @@ class Trainer():
         train_loss = 0
         correct = 0
 
-        train_iterator = tqdm(train_loader, position = 1,
-                            desc = "Training...(loss=X.X)",
-                            bar_format="{l_bar}{r_bar}",
-                            dynamic_ncols=True,
-                            leave = False)
+        if args['--notebook']:
+            train_iterator = notebook.tqdm(train_loader, position = 1,
+                                desc = "Training...(loss=X.X)",
+                                dynamic_ncols=True,
+                                leave = False)
+        else:
+            train_iterator = tqdm(train_loader, position = 1,
+                                desc = "Training...(loss=X.X)",
+                                dynamic_ncols=True,
+                                leave = False)
 
         for batch_idx, (data, targets) in enumerate(train_iterator): 
             
@@ -301,12 +305,12 @@ class Trainer():
             # metrics
             train_loss += loss.data.item()
 
-            if args["--log-interval"]:
-                if batch_idx % int(args["--log-interval"]) == 0:
-                    logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                        epoch, batch_idx * len(data), len(train_loader.dataset),
-                        100. * batch_idx / len(train_loader), loss.data.item()))
-                        
+            # if args["--log-interval"]:
+            #     if batch_idx % int(args["--log-interval"]) == 0:
+            #         logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            #             epoch, batch_idx * len(data), len(train_loader.dataset),
+            #             100. * batch_idx / len(train_loader), loss.data.item()))
+
             train_iterator.set_description("Training... (loss=%2.5f)" % loss.data.item())
 
         train_loss /= len(train_loader)
@@ -325,7 +329,10 @@ class Trainer():
         to_display = {"img": [], "pred": [], "gt": []}
         cpt_display = 0
         
-        valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
+        if args['--notebook']:
+            valid_iterator = notebook.tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
+        else:
+            valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
         # epoch_iterator = tqdm(test_loader,
         #                     desc="Validating... (loss=X.X)",
         #                     bar_format="{l_bar}{r_bar}",
@@ -339,12 +346,12 @@ class Trainer():
 
                     output = self.model(images, targets)
 
-                    gt_bboxes_list = [t['boxes'].numpy() for t in targets]
-                    pred_bboxes_list = [np.concatenate((pred['scores'].unsqueeze(1).numpy(), pred['boxes'].numpy()), axis=1) for pred in output]
+                    gt_bboxes_list = [t['boxes'].cpu().numpy() for t in targets]
+                    pred_bboxes_list = [np.concatenate((pred['scores'].unsqueeze(1).cpu().numpy(), pred['boxes'].cpu().numpy()), axis=1) for pred in output]
                     metrics += ut_metrics.calc_f2_score(gt_bboxes_list, pred_bboxes_list)
                     
                     if cpt_display < 4 and random() < 0.3:
-                        to_display['img'].append((images[0].permute(1,2,0).numpy()*255).astype(np.uint8))
+                        to_display['img'].append((images[0].permute(1,2,0).cpu().numpy()*255).astype(np.uint8))
                         to_display['pred'].append(pred_bboxes_list[0])
                         to_display['gt'].append(gt_bboxes_list[0])
                         cpt_display += 1
@@ -356,7 +363,10 @@ class Trainer():
                     validation_loss += self.criterion(output, targets).data.item()
                     pred = output.data.max(1, keepdim=True)[1]
                     metrics += pred.eq(targets.data.view_as(pred)).cpu().sum()
-        
+
+                if batch_idx < self.configs.get('it', 0):
+                    break
+
         self.wandb_predictions(to_display, "validation")
         
         if self.config.get("task") != "object_detection":
@@ -379,13 +389,21 @@ class Trainer():
             trigger_times = 0
             loss_val_previous = 100
         
-        epoch_iterator = tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
-                            total = self.config.configs.epoch, 
-                            initial = self.start_epoch-1, 
-                            position = 0, 
-                            desc = "Epoch", 
-                            leave = False)
-        
+        if args['--notebook']:
+            epoch_iterator = notebook.tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
+                                total = self.config.configs.epoch, 
+                                initial = self.start_epoch-1, 
+                                position = 0, 
+                                desc = "Epoch", 
+                                leave = False)
+        else:
+            epoch_iterator = tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
+                                total = self.config.configs.epoch, 
+                                initial = self.start_epoch-1, 
+                                position = 0, 
+                                desc = "Epoch", 
+                                leave = False)
+
         for current_epoch in epoch_iterator:
             
             loss_train, metric_train = self.train(current_epoch, train_loader)
