@@ -270,7 +270,11 @@ class Trainer():
         train_loss = 0
         correct = 0
 
-        train_iterator = tqdm(train_loader, position = 1, desc = "Training...", leave = False)
+        train_iterator = tqdm(train_loader, position = 1,
+                            desc = "Training...(loss=X.X)",
+                            bar_format="{l_bar}{r_bar}",
+                            dynamic_ncols=True,
+                            leave = False)
 
         for batch_idx, (data, targets) in enumerate(train_iterator): 
             
@@ -302,7 +306,9 @@ class Trainer():
                     logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         epoch, batch_idx * len(data), len(train_loader.dataset),
                         100. * batch_idx / len(train_loader), loss.data.item()))
-            
+                        
+            train_iterator.set_description("Training... (loss=%2.5f)" % loss.data.item())
+
         train_loss /= len(train_loader)
         # logger.info('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
         #     train_loss, correct, len(train_loader.dataset),

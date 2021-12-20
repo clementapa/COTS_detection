@@ -11,7 +11,7 @@ data:
 
 configs:
   epoch: 20
-  batch_size: 8
+  batch_size: 10
   seed: 1
 
 model:
