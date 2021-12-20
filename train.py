@@ -23,7 +23,6 @@ import yaml
 import os, os.path as osp
 from docopt import docopt
 from easydict import EasyDict
-from tqdm import tqdm, notebook.tqdm
 import shutil
 import numpy as np
 import matplotlib.pyplot as plt
@@ -269,16 +268,10 @@ class Trainer():
         train_loss = 0
         correct = 0
 
-        if args['--notebook']:
-            train_iterator = notebook.tqdm(train_loader, position = 1,
-                                desc = "Training...(loss=X.X)",
-                                dynamic_ncols=True,
-                                leave = False)
-        else:
-            train_iterator = tqdm(train_loader, position = 1,
-                                desc = "Training...(loss=X.X)",
-                                dynamic_ncols=True,
-                                leave = False)
+        train_iterator = tqdm(train_loader, position = 1,
+                            desc = "Training...(loss=X.X)",
+                            dynamic_ncols=True,
+                            leave = False)
 
         for batch_idx, (data, targets) in enumerate(train_iterator): 
             
@@ -329,10 +322,7 @@ class Trainer():
         to_display = {"img": [], "pred": [], "gt": []}
         cpt_display = 0
         
-        if args['--notebook']:
-            valid_iterator = notebook.tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
-        else:
-            valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
+        valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
         # epoch_iterator = tqdm(test_loader,
         #                     desc="Validating... (loss=X.X)",
         #                     bar_format="{l_bar}{r_bar}",
@@ -389,20 +379,12 @@ class Trainer():
             trigger_times = 0
             loss_val_previous = 100
         
-        if args['--notebook']:
-            epoch_iterator = notebook.tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
-                                total = self.config.configs.epoch, 
-                                initial = self.start_epoch-1, 
-                                position = 0, 
-                                desc = "Epoch", 
-                                leave = False)
-        else:
-            epoch_iterator = tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
-                                total = self.config.configs.epoch, 
-                                initial = self.start_epoch-1, 
-                                position = 0, 
-                                desc = "Epoch", 
-                                leave = False)
+        epoch_iterator = tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
+                            total = self.config.configs.epoch, 
+                            initial = self.start_epoch-1, 
+                            position = 0, 
+                            desc = "Epoch", 
+                            leave = False)
 
         for current_epoch in epoch_iterator:
             
@@ -537,6 +519,11 @@ class Trainer():
 
 if __name__ == '__main__':
     args = docopt(__doc__) 
+
+    if args['--notebook']:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
 
     logger = init_logger("Trainer", args['--log'])
 
