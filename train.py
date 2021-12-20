@@ -364,7 +364,7 @@ class Trainer():
                     pred = output.data.max(1, keepdim=True)[1]
                     metrics += pred.eq(targets.data.view_as(pred)).cpu().sum()
 
-                if batch_idx < self.configs.get('it', 0):
+                if batch_idx > self.configs.get('it', 0):
                     break
 
         self.wandb_predictions(to_display, "validation")
