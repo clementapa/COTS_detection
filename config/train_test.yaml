@@ -10,8 +10,8 @@ data:
   root_path: /kaggle/input/tensorflow-great-barrier-reef/train_images
 
 configs:
-  epoch: 5
-  batch_size: 12
+  epoch: 20
+  batch_size: 32
   seed: 1
 
 model:
@@ -19,14 +19,6 @@ model:
   params:
     pretrained: True
     pretrained_backbone: True
-
-# criterion:
-#   task1: classification
-#     name: torch.nn.CrossEntropyLoss
-#     params:
-#       reduction: mean
-#   task2: regression
-#     name: torch.nn.MSELoss
 
 optimizer:
   name: torch.optim.SGD

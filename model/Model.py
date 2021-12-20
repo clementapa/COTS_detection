@@ -38,5 +38,8 @@ class FasterRCNN(nn.Module):
 
         self.model = model
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return self.model(x, y)
+    def forward(self, x: torch.Tensor, y: torch.Tensor = None) -> torch.Tensor:
+        if y != None:
+            return self.model(x, y)
+        else:
+            return self.model(x)

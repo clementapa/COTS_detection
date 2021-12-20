@@ -28,6 +28,8 @@ from tqdm import tqdm
 import shutil
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
+from random import random
 
 import torch
 from torchvision import datasets
@@ -41,6 +43,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import utils.utils as utils
 from utils.logger import init_logger
+import utils.metrics as ut_metrics
 
 # # Data initialization and loading
 # from data import data_transforms
@@ -104,7 +107,7 @@ class Trainer():
         model_cls = utils.import_class(self.config.model.name)
         self.model = model_cls(**self.config.model.get('params', {}))
         self.model.to(self.device)
-        logger.info("Model : {}".format(self.model))
+        # logger.info("Model : {}".format(self.model))
 
         if self.config.get("task") == "object_detection":
             pass
@@ -202,7 +205,7 @@ class Trainer():
                                                         shuffle=False, collate_fn=Datasets.collate_fn,
                                                         num_workers=int(args["--num_workers"]))
             val_loader = torch.utils.data.DataLoader(val_set, batch_size=self.config.configs.batch_size, 
-                                                        shuffle=False, collate_fn=Datasets.collate_fn,
+                                                        shuffle=True, collate_fn=Datasets.collate_fn,
                                                         num_workers=int(args["--num_workers"]))
 
             logger.info("train : {}, validation : {}".
@@ -267,7 +270,9 @@ class Trainer():
         train_loss = 0
         correct = 0
 
-        for batch_idx, (data, targets) in enumerate(tqdm(train_loader, position = 1, desc = "Train", leave = False)): 
+        train_iterator = tqdm(train_loader, position = 1, desc = "Training...", leave = False)
+
+        for batch_idx, (data, targets) in enumerate(train_iterator): 
             
             self.optimizer.zero_grad()
 
@@ -297,64 +302,93 @@ class Trainer():
                     logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         epoch, batch_idx * len(data), len(train_loader.dataset),
                         100. * batch_idx / len(train_loader), loss.data.item()))
-
+            
         train_loss /= len(train_loader)
-        logger.info('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-            train_loss, correct, len(train_loader.dataset),
-            100. * correct / len(train_loader.dataset)))
-
-        return train_loss, correct.item()/len(train_loader.dataset) 
+        # logger.info('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
+        #     train_loss, correct, len(train_loader.dataset),
+            # 100. * correct / len(train_loader.dataset)))
+        return train_loss, 0
+        # return train_loss, correct.item()/len(train_loader.dataset) 
 
     def validation(self, val_loader):
 
         self.model.eval()
         validation_loss = 0
-        correct = 0
+        metrics = 0
 
+        to_display = {"img": [], "pred": [], "gt": []}
+        cpt_display = 0
+        
+        valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
+        # epoch_iterator = tqdm(test_loader,
+        #                     desc="Validating... (loss=X.X)",
+        #                     bar_format="{l_bar}{r_bar}",
+        #                     dynamic_ncols=True)
         with torch.no_grad():
-            for data, targets in tqdm(val_loader, position = 1, desc = "Validation", leave = False):
+            for batch_idx, (data, targets) in enumerate(valid_iterator):
             
                 if self.config.get("task") == "object_detection":
                     images = list(image.to(self.device) for image in data)
                     targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets] # probleme si image avec 0 bounding boxes
 
-                    loss_dict = self.model(images, targets)
-                    loss = sum(l for l in loss_dict.values())
+                    output = self.model(images, targets)
+
+                    gt_bboxes_list = [t['boxes'].numpy() for t in targets]
+                    pred_bboxes_list = [np.concatenate((pred['scores'].unsqueeze(1).numpy(), pred['boxes'].numpy()), axis=1) for pred in output]
+                    metrics += ut_metrics.calc_f2_score(gt_bboxes_list, pred_bboxes_list)
+                    
+                    if cpt_display < 4 and random() < 0.3:
+                        to_display['img'].append((images[0].permute(1,2,0).numpy()*255).astype(np.uint8))
+                        to_display['pred'].append(pred_bboxes_list[0])
+                        to_display['gt'].append(gt_bboxes_list[0])
+                        cpt_display += 1
+                        # logger.info(batch_idx)
                 else:
                     data, targets = data.to(self.device), targets.to(self.device)
                     output = self.model(data)
 
                     validation_loss += self.criterion(output, targets).data.item()
                     pred = output.data.max(1, keepdim=True)[1]
-                    correct += pred.eq(targets.data.view_as(pred)).cpu().sum()
-
-        validation_loss /= len(val_loader)
-        logger.info('Validation set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-            validation_loss, correct, len(val_loader.dataset),
-            100. * correct / len(val_loader.dataset)))
-
-        return validation_loss, correct.item()/len(val_loader.dataset)
+                    metrics += pred.eq(targets.data.view_as(pred)).cpu().sum()
+        
+        self.wandb_predictions(to_display, "validation")
+        
+        if self.config.get("task") != "object_detection":
+            validation_loss /= len(val_loader)
+        metrics /= len(val_loader)
+        # logger.info('Validation set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
+        #     validation_loss, correct, len(val_loader.dataset),
+        #     100. * correct / len(val_loader.dataset)))
+        
+        return validation_loss, metrics #, correct.item()/len(val_loader.dataset)
 
     def train_epoch(self, train_loader, val_loader, relaunch = False):
         logger.info("Launch training, start epoch : {}".format(self.start_epoch))
 
         losses_train = []
-        accuracies_train = []
+        metrics_train = []
         acc_val_previous = 0
 
         if self.config.configs.get('early_stopping'):
             trigger_times = 0
             loss_val_previous = 100
-
-        for current_epoch in tqdm(range(self.start_epoch,self.config.configs.epoch+1), total = self.config.configs.epoch , initial = self.start_epoch -1 , position = 0, desc = "Epoch", leave = False):
+        
+        epoch_iterator = tqdm(range(self.start_epoch,self.config.configs.epoch+1), 
+                            total = self.config.configs.epoch, 
+                            initial = self.start_epoch-1, 
+                            position = 0, 
+                            desc = "Epoch", 
+                            leave = False)
+        
+        for current_epoch in epoch_iterator:
             
-            loss_train, acc_train = self.train(current_epoch, train_loader)
+            loss_train, metric_train = self.train(current_epoch, train_loader)
             
             if self.config.get('scheduler') :
                 self.scheduler.step()
 
             losses_train.append(loss_train) 
-            accuracies_train.append(acc_train) 
+            metrics_train.append(metric_train) 
 
             if relaunch :
                 real_epoch = current_epoch + (self.config.configs.epoch * int(relaunch))
@@ -378,10 +412,10 @@ class Trainer():
                     if self.config.configs.get('k_folds'): 
                         self.results_k_folds[str(self.fold)].append(acc_val)
                     else:
-                        self.update_wandb(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
+                        self.update_wandb(real_epoch, losses_train[-1], metrics_train[-1], loss_val = loss_val, accuracy_val = acc_val)
                     acc_val_previous = acc_val
                 else:
-                    if not self.config.configs.get('k_folds'): self.update_wandb(real_epoch, losses_train[-1], accuracies_train[-1], loss_val = loss_val, accuracy_val = acc_val)
+                    if not self.config.configs.get('k_folds'): self.update_wandb(real_epoch, losses_train[-1], metrics_train[-1], loss_val = loss_val, accuracy_val = acc_val)
                 
                 ##### Early stopping
                 if self.config.configs.get('early_stopping'):
@@ -415,30 +449,24 @@ class Trainer():
         else:
             self.checkpoint(real_epoch)
 
-    def update_tensorboard(self, current_epoch, loss_train, accuracy_train, loss_val= None, accuracy_val = None):
-        pass
-        # if not self.config.get('checkpoint'):  
-        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-        #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
-        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
-        #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
-        # elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
-        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-        #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
-        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
-        #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
-        # else:
-        #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
-        #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+    # def update_tensorboard(self, current_epoch, loss_train, accuracy_train, loss_val= None, accuracy_val = None):
+    #     # if not self.config.get('checkpoint'):  
+    #     #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+    #     #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
+    #     #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+    #     #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
+    #     # elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
+    #     #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+    #     #     # self.writer.add_scalar('Loss/test', loss_val, current_epoch-1)
+    #     #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
+    #     #     # self.writer.add_scalar('Accuracy/test', accuracy_val, current_epoch-1)
+    #     # else:
+    #     #     # self.writer.add_scalar('Loss/train', loss_train, current_epoch-1)
+    #     #     # self.writer.add_scalar('Accuracy/train', accuracy_train, current_epoch-1)
     
     def update_wandb(self, current_epoch, loss_train, accuracy_train, loss_val= None, accuracy_val = None):
-        self.run.log()
-        if not self.config.get('checkpoint'):  
-            self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
-            self.run.log({'val_loss': loss_val, 'epoch': current_epoch-1})
-            self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
-            self.run.log({'val_accuracy': accuracy_val, 'epoch': current_epoch-1})
-        elif current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
+
+        if not self.config.get('checkpoint') or current_epoch % self.config.checkpoint.get('test_step', 0.1) == 0:  
             self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
             self.run.log({'val_loss': loss_val, 'epoch': current_epoch-1})
             self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
@@ -447,6 +475,18 @@ class Trainer():
             self.run.log({'train_loss': loss_train, 'epoch': current_epoch-1})
             self.run.log({'train_accuracy': accuracy_train, 'epoch': current_epoch-1})
 
+    def wandb_predictions(self, dict_img, name_set):
+        """
+        dict_img : {"img": [], "pred": [], "gt": []}
+        """
+        list_concat = []
+        for i in range(len(dict_img[[*dict_img.keys()][0]])):
+            img, img_targ, img_pred, img_targ_pred = utils.draw_predictions_and_targets(dict_img['img'][i], dict_img['pred'][i], dict_img['gt'][i])
+            list_concat.append(np.concatenate((utils.resize(img, 2), utils.resize(img_targ, 2), utils.resize(img_pred,2), utils.resize(img_targ_pred, 2)), axis=1))
+
+        output = np.concatenate(([*list_concat]), axis=0)
+        self.run.log({name_set : wandb.Image(output)})
+        
     def save_weights(self, epoch = None, fold = None):
         name = "weight"
         if epoch is not None: name += f"_{epoch}"
@@ -457,17 +497,23 @@ class Trainer():
     def checkpoint(self, epoch, fold = None):
         name = "checkpoint"
         if fold is not None: name += f"_fold_{fold}"
-
-        torch.save({'epoch': epoch,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                    'loss': self.criterion},
-                    osp.join(osp.join(self.REPO_EXPERIENCE, "train"), f"{name}.pth"))
-                    # 'scheduler_state_dict': self.scheduler.state_dict(),
+        if self.config.get('scheduler') :
+            torch.save({'epoch': epoch,
+                        'model_state_dict': self.model.state_dict(),
+                        'optimizer_state_dict': self.optimizer.state_dict(),
+                        'scheduler_state_dict': self.scheduler.state_dict(),
+                        'loss': self.criterion},
+                        osp.join(osp.join(self.REPO_EXPERIENCE, "train"), f"{name}.pth"))
+        else:
+            torch.save({'epoch': epoch,
+                        'model_state_dict': self.model.state_dict(),
+                        'optimizer_state_dict': self.optimizer.state_dict()},
+                        # 'loss': self.criterion},
+                        osp.join(osp.join(self.REPO_EXPERIENCE, "train"), f"{name}.pth"))
 
 if __name__ == '__main__':
     args = docopt(__doc__) 
 
-    logger = init_logger("Train", args['--log'])
+    logger = init_logger("Trainer", args['--log'])
 
     Trainer(args['<yaml_file>'])
