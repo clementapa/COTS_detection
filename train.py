@@ -521,7 +521,7 @@ if __name__ == '__main__':
     args = docopt(__doc__) 
 
     if args['--notebook']:
-        from tqdm.notebook import tqdm
+        from tqdm.notebook import tqdm_notebook as tqdm
     else:
         from tqdm import tqdm
 
