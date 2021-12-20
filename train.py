@@ -271,6 +271,7 @@ class Trainer():
         train_iterator = tqdm(train_loader, position = 1,
                             desc = "Training...(loss=X.X)",
                             dynamic_ncols=True,
+                            total = self.config.configs.get('it', len(train_loader)),
                             leave = False)
 
         for batch_idx, (data, targets) in enumerate(train_iterator): 
@@ -306,6 +307,9 @@ class Trainer():
 
             train_iterator.set_description("Training... (loss=%2.5f)" % loss.data.item())
 
+            if batch_idx > self.config.configs.get('it', 0):
+                break
+
         train_loss /= len(train_loader)
         # logger.info('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
         #     train_loss, correct, len(train_loader.dataset),
@@ -322,7 +326,9 @@ class Trainer():
         to_display = {"img": [], "pred": [], "gt": []}
         cpt_display = 0
         
-        valid_iterator = tqdm(val_loader, position = 1, desc = "Validating...", leave = False)
+        valid_iterator = tqdm(val_loader, position = 1, 
+                            desc = "Validating...", 
+                            leave = False)
         # epoch_iterator = tqdm(test_loader,
         #                     desc="Validating... (loss=X.X)",
         #                     bar_format="{l_bar}{r_bar}",
@@ -353,9 +359,6 @@ class Trainer():
                     validation_loss += self.criterion(output, targets).data.item()
                     pred = output.data.max(1, keepdim=True)[1]
                     metrics += pred.eq(targets.data.view_as(pred)).cpu().sum()
-
-                if batch_idx > self.configs.get('it', 0):
-                    break
 
         self.wandb_predictions(to_display, "validation")
         
