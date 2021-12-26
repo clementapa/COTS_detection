@@ -48,6 +48,7 @@ class WandbLogger():
                     dict_pred["class_id"] = int(label)
                     dict_pred["box_caption"] = box_caption
                     dict_pred["scores"] = {"confidence": float(score)}
+                    dict_pred["domain"] = "pixel"
 
                     box_data_preds.append(dict_pred)
 
@@ -65,6 +66,7 @@ class WandbLogger():
                 dict_gt["position"] = position
                 dict_gt["class_id"] = int(label)
                 dict_gt["box_caption"] = box_caption
+                dict_gt["domain"] = "pixel"
 
                 box_data_gt.append(dict_gt)
             
