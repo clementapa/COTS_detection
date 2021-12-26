@@ -15,6 +15,20 @@ Split possible:
 -    totally random (loss of temporality)
 -    by videos: train: 0 & 1, val: 2 ?
 -    by sequences
+### To add (clément)
+- [ ] Class wandblogger:
+     - [X] log all in wandblogger (checkpoint/weight, metrics, config)
+     - [X] visual images predictions of training (correctly) afficher n dernières images à la fin de chaque batch
+     - [ ] visual video sequence (validation (image dans l'ordre)
+     - [ ] torchmetrics pour les metrics?
+- [X] loss regression, classif log dans wandb, IoU, F2score
+- [X] early stopping
+- [X] pour faster rcnn mettre "outputs" "preds" etc dictionnaire
+- [x] scheduler
+- [X] checkpoint plus propre (moniteur liée au metrics wandb)
+- [X] enlever tout les trucs qui servent à rien (image classification)
+- [X] option fast dv run si activé juste 2 batch train et val puis fin entrainement
+- [x] data augmentation avec albumentation
 
 Note: the test set keeps the temporality!\
 "The API serves the images one by one, in order by video and frame number, as pixel arrays"
@@ -32,7 +46,7 @@ Maybe try (Sparse RCNN and others)
 
 ## Notes
 - The competition metrics is the F2-score, so, tackle FN is more important than FP. So, False Positive are tolerate.
-- All images in train_images have a size of 1280x720 
+- All images in train_images have a size of 1280x720 (WxH)
 - A video containes several sequences (split dataset by sequence ?) 
 
 ## Sequence repartition with bounding boxes
@@ -65,3 +79,7 @@ Maybe try (Sparse RCNN and others)
 <mark>sequence_frame</mark> - The frame number within a given sequence.\
 <mark>image_id</mark> - ID code for the image, in the format '{video_id}-{video_frame}'\
 <mark>annotations</mark> - The bounding boxes of any starfish detections in a string format that can be evaluated directly with Python. Does not use the same format as the predictions you will submit. Not available in test.csv. A bounding box is described by the pixel coordinate (x_min, y_min) of its upper left corner within the image together with its width and height in pixels.
+
+Competition BBOX = COCO format [x_min, y_min, width, height]
+
+batch_size 10 with original size => 15.3Gb

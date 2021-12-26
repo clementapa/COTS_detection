@@ -21,7 +21,7 @@ class EarlyStopping():
         if self.mode == "max":
             if value < self.value_keep:
                 self.trigger_time += 1
-                self.logger.info(f'trigger times : {self.trigger_time}')
+                self.logger.info(f'trigger time early stopping : {self.trigger_time}')
 
                 if self.trigger_time >= self.patience:
                     self.logger.info('Early stopping!')
@@ -29,13 +29,13 @@ class EarlyStopping():
             else:
                 self.trigger_time = 0
 
-                self.logger.info(f'trigger time : {self.trigger_time}')
+                self.logger.info(f'trigger time early stopping : {self.trigger_time}')
 
                 self.value_keep = value
         else:
             if value > self.value_keep:
                 self.trigger_time += 1
-                self.logger.info(f'trigger times : {self.trigger_time}')
+                self.logger.info(f'trigger time early stopping : {self.trigger_time}')
 
                 if self.trigger_time >= self.patience:
                     self.logger.info('Early stopping!')
@@ -75,14 +75,14 @@ class ModelCheckpoint():
         if self.mode == "max":
             if value >= self.value_keep:
                 self.logger.info(
-                    f"Save checkpoint {self.monitor}: new value {value} > {self.value_keep}"
+                    f"Save checkpoint {self.monitor}: new value {value} >= {self.value_keep}"
                 )
                 self._save(trainer, epoch, name)
                 self.value_keep = value
         else:
             if value <= self.value_keep:
                 self.logger.info(
-                    f"Save checkpoint {self.monitor}: new value {value} < {self.value_keep}"
+                    f"Save checkpoint {self.monitor}: new value {value} <= {self.value_keep}"
                 )
                 self._save(trainer, epoch, name)
                 self.value_keep = value
@@ -101,7 +101,7 @@ class ModelCheckpoint():
         if self.mode == "max":
             if value >= self.value_keep:
                 self.logger.info(
-                    f"Save weights {self.monitor}: new value {value} > {self.value_keep}"
+                    f"Save weights {self.monitor}: new value {value} >= {self.value_keep}"
                 )
                 torch.save(model.state_dict(),
                            osp.join(self.run.dir, f"{name}.pth"))
@@ -109,7 +109,7 @@ class ModelCheckpoint():
         else:
             if value <= self.value_keep:
                 self.logger.info(
-                    f"Save weights {self.monitor}: new value {value} < {self.value_keep}"
+                    f"Save weights {self.monitor}: new value {value} <= {self.value_keep}"
                 )
                 torch.save(model.state_dict(),
                            osp.join(self.run.dir, f"{name}.pth"))

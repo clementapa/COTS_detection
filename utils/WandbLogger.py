@@ -15,7 +15,6 @@ class WandbLogger():
 
     def log_images(self, batch, name_set, n, outputs = None):
         """
-        dict_img : {"img": [], "pred": [], "gt": []}
         """
         images, targets = batch
 

@@ -1,22 +1,21 @@
-import os, os.path as osp 
+import os, os.path as osp
 import ast
-from PIL import Image, ImageDraw
+from PIL import Image
 import cv2
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 import torch
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as trans
+from torch.utils.data import Dataset
+import numpy as np
 
-import datasets.transforms as T
 from utils.logger import init_logger
+
 log_level = "DEBUG"
 logger = init_logger("Dataloader", log_level)
 
+
 class ReefDataset(Dataset):
-    def __init__(self, annotations_file, root_dir, train, transform=None):
+    def __init__(self, annotations_file, root_dir, train, transforms=None):
         """
         Args:
             annotations_file (string): Path to the csv file with annotations.
@@ -29,22 +28,22 @@ class ReefDataset(Dataset):
                 with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
         """
         self.root_dir = root_dir
-        self.transform = transform
+        self.transforms = transforms
 
         df = pd.read_csv(annotations_file)
         if train:
             df = df[(df.video_id == 0) | (df.video_id == 1)]
-        else: 
+        else:
             df = df[(df.video_id == 2)]
 
         df = df[['video_id', 'video_frame', 'annotations']]
         self.img_annotations = df
 
-    def __len__(self):
-        return len(self.img_annotations)
+        self.img_annotations = self.img_annotations[
+            self.img_annotations["annotations"] != "[]"]
 
-    def __getitem__(self, idx): 
-        
+    def __getitem__(self, idx):
+
         path_base = osp.join(self.root_dir, "video_{}/{}.jpg")
         video_id = self.img_annotations.iloc[idx, 0]
         frame_id = self.img_annotations.iloc[idx, 1]
@@ -52,77 +51,58 @@ class ReefDataset(Dataset):
 
         try:
             img = Image.open(path_img).convert("RGB")
-            img.verify() # Verify it is in fact an image
+            img.verify()  # Verify it is in fact an image
         except (IOError, SyntaxError) as e:
             # logger.warning('Bad file:', path_img)
             print(('Bad file:', path_img))
-        
+
         boxes = []
         bounding_boxes = ast.literal_eval(self.img_annotations.iloc[idx, 2])
         for box in bounding_boxes:
-            boxes.append([box['x'], box['y'], box['x']+box['width'], box['y']+box['height']])
-        
-        if boxes == []: 
-            boxes = torch.zeros((0, 4), dtype=torch.float32) 
+            boxes.append([
+                box['x'], box['y'], box['x'] + box['width'],
+                box['y'] + box['height']
+            ])
+
+        if boxes == []:
+            boxes = torch.zeros((0, 4), dtype=torch.float32)
             labels = torch.zeros((1, 1), dtype=torch.int64)
         else:
             # convert everything into a torch.Tensor
             boxes = torch.as_tensor(boxes, dtype=torch.float32)
             # there is only one class
-            labels = torch.ones(((boxes.shape[0]),), dtype=torch.int64)
+            labels = torch.ones((boxes.shape[0], ), dtype=torch.int64)
+
+        image_id = f"{video_id}-{frame_id}"
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        # suppose all instances are not crowd
+        iscrowd = torch.zeros((boxes.shape[0], ), dtype=torch.int64)
 
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
-        # target["image_id"] = f"{video_id}-{frame_id}"
-        # target["path_img"] = path_img
+        # target["image_id"] = image_id
+        # target["area"] = area
+        # target["iscrowd"] = iscrowd
 
-        if self.transform is not None:
-            img, target = self.transform(img, target)
+        # transformations using albumentation library
+        if self.transforms is not None:
+            if self.transforms.get("albu"):
+                transformed = self.transforms["albu"](
+                    image=np.array(img),
+                    bboxes=target['boxes'],
+                    class_labels=target['labels'])
+                img = transformed['image']
+                target["boxes"] = torch.as_tensor(transformed['bboxes'])
+                target["labels"] = torch.as_tensor(transformed['class_labels'])
+
+            img, target = self.transforms["normal"](img, target)
 
         return img, target
 
-def get_transform(train):
-    transforms = []
-    transforms.append(T.ToTensor())
-    # if train:
-    #     transforms.append(T.RandomHorizontalFlip(0.5))
-    return T.Compose(transforms)
+    def __len__(self):
+        return len(self.img_annotations)
+
 
 def collate_fn(batch):
     return tuple(zip(*batch))
-
-def draw_boxes(img, bounding_boxes):
-    img = img.permute(1, 2, 0).numpy().copy()
-    bounding_boxes = bounding_boxes.numpy().astype(np.int32)
-    for box in bounding_boxes:
-        # draw = ImageDraw.Draw(img)
-        # x0, y0, x1, y1 = box
-        # draw.rectangle((x0, y0, x1, y1), outline=180, width=5)
-        cv2.rectangle(img,
-                    (box[0], box[1]),
-                    (box[2], box[3]),
-                    (220, 0, 0), 3)
-    return img
-
-# csv_file = "/home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train.csv"
-# root_dir = "/home/clement/Documents/Cours/MVA/Cours_to_validate/Deep_learning/Project/tensorflow-great-barrier-reef/train_images"
-# train_data = ReefDataset(csv_file, root_dir, train=True, transform=get_transform(True))
-# valid_data = ReefDataset(csv_file, root_dir, train=False, transform=get_transform(False))
-
-# train_loader = DataLoader(train_data, batch_size=20, shuffle=False, collate_fn=collate_fn)
-# valid_loader = DataLoader(valid_data, batch_size=20, shuffle=False, collate_fn=collate_fn)
-
-# images, targets = next(iter(train_loader))
-
-# images = list(image for image in images)
-# targets = [{k: v for k, v in t.items()} for t in targets]
-
-# for img, target in zip(images, targets):
-#     print(target["path_img"])
-#     if target["boxes"].shape[0] != 0:
-#         img = draw_boxes(img, target["boxes"])
-#         plt.imshow(img)
-#         plt.show()
-
-# breakpoint()
