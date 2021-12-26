@@ -1,15 +1,33 @@
 comment: Commentaire sur l'entraînement
 
+wandb:
+  name_project: "COTS_detection"
+  name_run: 
+
+data:
+  csv_file: ../tensorflow-great-barrier-reef/train.csv
+  root_path: ../tensorflow-great-barrier-reef/train_images
+
 configs:
-  epoch: 1
-  batch_size: 64
+  epoch: 10
+  it: 200
   seed: 1
   k_folds: 2
+  batch_size: 2
+  seed: 1
+  checkpoint:
+    monitor: "train/loss_sum"
+    mode: "min"
+  early_stopping:
+    monitor: "train/loss_sum"
+    mode: "min"
+    patience: 4
 
-model: 
-  name: model.Model.ResNet
+model:
+  name: model.Model.FasterRCNN
   params:
-      freeze: True
+    pretrained: True
+    pretrained_backbone: True
 
 criterion: 
   name: torch.nn.CrossEntropyLoss
@@ -17,11 +35,10 @@ criterion:
     reduction: mean
     
 optimizer:
-  name:  torch.optim.SGD
-  params :
-    lr: 0.001
-    momentum : 0.5
-    # nesterov : True
+  name: torch.optim.SGD
+  params:
+    lr: 0.005
+    momentum : 0.9
 
 scheduler:
   name: torch.optim.lr_scheduler.MultiStepLR
@@ -29,8 +46,3 @@ scheduler:
     milestones:
       - 500
     gamma: 0.1
-
-# checkpoint:
-#   test_step: 1          # on évalue le modèle sur la base de test toute les n epoch
-#   save_weight_step: 10 # sauvegarde des poids du modèle toute les n epoch
-#   checkpoint_step: 10  # checkpoint pour recommencer l'entraînement
