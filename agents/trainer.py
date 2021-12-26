@@ -17,6 +17,7 @@ from tqdm import tqdm
 # # Data initialization and loading
 # from data import data_transforms
 import datasets.dataset as Datasets
+import datasets.transforms as T
 import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
@@ -91,21 +92,22 @@ class Trainer():
             self.scheduler = scheduler_cls(self.optimizer,
                                            **self.config.scheduler.params)
 
-        if (args.checkpoint or args.relaunch):
-            checkpoint_file = osp.join(osp.join(self.REPO_EXPERIENCE, "train"),
-                                       "checkpoint.pth")
-            self.logger.info("Loading checkpoint {}".format(checkpoint_file))
-            checkpoint = torch.load(checkpoint_file)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            # self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            self.loss = checkpoint['loss']
+        # if args.checkpoint or args.relaunch:
+        #     checkpoint_file = osp.join(osp.join(self.REPO_EXPERIENCE, "train"),
+        #                                "checkpoint.pth")
+        #     self.logger.info("Loading checkpoint {}".format(checkpoint_file))
+        #     checkpoint = torch.load(checkpoint_file)
+        #     self.model.load_state_dict(checkpoint['model_state_dict'])
+        #     self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        #     # self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        #     self.loss = checkpoint['loss']
 
-            if (args.checkpoint):
-                self.start_epoch = checkpoint['epoch']
-            else:
-                self.start_epoch = 1
-        else:
+        #     if (args.checkpoint):
+        #         self.start_epoch = checkpoint['epoch']
+        #     else:
+        #         self.start_epoch = 1
+        # else:
+        if True:
             self.start_epoch = 1
 
         ##############################
@@ -167,16 +169,20 @@ class Trainer():
         if True:
             self.logger.info(f"Reading {self.config.data.root_path}")
 
-            train_set = Datasets.ReefDataset(
-                self.config.data.csv_file,
-                self.config.data.root_path,
-                train=True,
-                transforms=Datasets.get_transform(True))
+            train_set = Datasets.ReefDataset(self.config.data.csv_file,
+                                             self.config.data.root_path,
+                                             train=True,
+                                             transforms={
+                                                 "albu":
+                                                 T.get_transform_albu(True),
+                                                 "normal":
+                                                 T.get_transform(True)
+                                             })
             val_set = Datasets.ReefDataset(
                 self.config.data.csv_file,
                 self.config.data.root_path,
                 train=False,
-                transforms=Datasets.get_transform(False))
+                transforms={"normal": T.get_transform(False)})
 
             train_loader = torch.utils.data.DataLoader(
                 train_set,
@@ -361,7 +367,7 @@ class Trainer():
                 mode=self.config.configs.early_stopping.mode,
                 patience=self.config.configs.early_stopping.patience,
                 logger=self.logger)
-        
+
         ##### Init Model checkpoint
         model_checkpoint = callbacks.ModelCheckpoint(
             monitor=self.config.configs.checkpoint.monitor,
@@ -381,11 +387,6 @@ class Trainer():
 
             metrics_train = self.train(current_epoch, train_loader)
 
-            if self.config.get('scheduler'):
-                self.scheduler.step(
-                    self.config.scheduler.get('monitor')
-                )  # mettre metrics[self.config.scheduler.get('monitor')]
-
             if relaunch:
                 real_epoch = current_epoch + (self.config.configs.epoch *
                                               relaunch)
@@ -400,12 +401,21 @@ class Trainer():
             metrics = metrics_train.copy()
             metrics.update(metrics_validation)
 
+            self.wandb_logger.run.log(
+                {"lr": self.optimizer.param_groups[0]['lr']})
+
+            if self.config.get('scheduler'):
+                self.scheduler.step(metrics[self.config.scheduler.get(
+                    'monitor', None)])
+
             if hasattr(self, 'fold'):
                 self.results_k_folds[str(self.fold)].append(metrics)
 
             ##### Update Early stopping
             if self.config.configs.get('early_stopping'):
-                early_stopping.update(metrics)
+                res = early_stopping.update(metrics)
+                if res != None:
+                    break
 
             ##### Checkpoint
             model_checkpoint.save_checkpoint(
@@ -413,7 +423,7 @@ class Trainer():
                 metrics,
                 real_epoch,
                 fold=self.fold if hasattr(self, 'fold') else None)
-                
+
             model_checkpoint.save_weights(
                 self.model, metrics, real_epoch,
                 self.fold if hasattr(self, 'fold') else None)

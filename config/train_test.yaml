@@ -16,7 +16,7 @@ configs:
   seed: 1
 
 model:
-  name: model.Model.FasterRCNN
+  name: model.FasterRCNN.FasterRCNN
   params:
     pretrained: True
     pretrained_backbone: True
@@ -26,3 +26,13 @@ optimizer:
   params:
     lr: 0.001
     momentum : 0.9
+
+metrics:
+  train:
+    - "loss"
+    - "IoU"
+    - "F2-score"
+  validation:
+    - "loss"
+    - "IoU"
+    - "F2-score"

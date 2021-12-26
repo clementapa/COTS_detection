@@ -1,4 +1,4 @@
-from trainer import Trainer
+from agents.trainer import Trainer
 from utils.logger import init_logger
 import argparse
 from easydict import EasyDict

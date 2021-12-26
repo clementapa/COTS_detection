@@ -11,8 +11,6 @@ data:
 configs:
   epoch: 10
   it: 200
-  seed: 1
-  k_folds: 2
   batch_size: 2
   seed: 1
   checkpoint:
@@ -21,19 +19,14 @@ configs:
   early_stopping:
     monitor: "train/loss_sum"
     mode: "min"
-    patience: 10
-
+    patience: 5
+    
 model:
   name: model.FasterRCNN.FasterRCNN
   params:
     pretrained: True
     pretrained_backbone: True
 
-criterion: 
-  name: torch.nn.CrossEntropyLoss
-  params:
-    reduction: mean
-    
 optimizer:
   name: torch.optim.SGD
   params:
@@ -44,6 +37,7 @@ scheduler:
   name: torch.optim.lr_scheduler.ReduceLROnPlateau
   params:
     mode: "min"
+    verbose: True
     factor: 0.1
-    patience: 6
+    patience: 1
   monitor: "train/loss_sum"
