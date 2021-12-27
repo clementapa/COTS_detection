@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 # # Data initialization and loading
 # from data import data_transforms
-import datasets.dataset as Datasets
+from datasets.ReefDataset import ReefDataset, collate_fn
 import datasets.transforms as T
 import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
@@ -169,33 +169,29 @@ class Trainer():
         if True:
             self.logger.info(f"Reading {self.config.data.root_path}")
 
-            train_set = Datasets.ReefDataset(self.config.data.csv_file,
-                                             self.config.data.root_path,
-                                             train=True,
-                                             transforms={
-                                                 "albu":
-                                                 T.get_transform_albu(True),
-                                                 "normal":
-                                                 T.get_transform(True)
-                                             })
-            val_set = Datasets.ReefDataset(
+            train_set = ReefDataset(
                 self.config.data.csv_file,
                 self.config.data.root_path,
-                train=False,
-                transforms={"normal": T.get_transform(False)})
+                train=True,
+                transforms=T.get_transform(True),
+            )
+            val_set = ReefDataset(self.config.data.csv_file,
+                                           self.config.data.root_path,
+                                           train=False,
+                                           transforms=T.get_transform(False))
 
             train_loader = torch.utils.data.DataLoader(
                 train_set,
                 batch_size=self.config.configs.batch_size,
                 shuffle=True,
-                collate_fn=Datasets.collate_fn,
-                num_workers=int(args.num_workers))
+                collate_fn=collate_fn,
+                num_workers=args.num_workers)
             val_loader = torch.utils.data.DataLoader(
                 val_set,
                 batch_size=self.config.configs.batch_size,
                 shuffle=False,
-                collate_fn=Datasets.collate_fn,
-                num_workers=int(args.num_workers))
+                collate_fn=collate_fn,
+                num_workers=args.num_workers)
 
             self.logger.info("train : {}, validation : {}".format(
                 len(train_loader.dataset), len(val_loader.dataset)))
@@ -311,15 +307,16 @@ class Trainer():
 
         return loss_dict
 
-    def validation(self, val_loader):
+    def validation(self, val_loader, metrics_inst):
 
         self.model.eval()
-        metrics = {"F2_score": 0}
 
         valid_iterator = tqdm(val_loader,
                               position=1,
                               desc="Validating...",
                               leave=False)
+
+        metrics = {}
 
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(valid_iterator):
@@ -336,13 +333,14 @@ class Trainer():
                                     pred['boxes'].cpu().numpy()),
                                    axis=1) for pred in output
                 ]
-                metrics["F2_score"] += ut_metrics.calc_f2_score(
-                    gt_bboxes_list, pred_bboxes_list)
+
+                metrics_inst["F2_score"].update(gt_bboxes_list,
+                                                pred_bboxes_list)
 
                 if self.fast_dev_run:
                     break
 
-        metrics["F2_score"] /= len(val_loader)
+        metrics["F2_score"] = metrics_inst["F2_score"].compute()
         metrics = {'validation/' + k: v for k, v in metrics.items()}
 
         self.wandb_logger.log_images((data, targets),
@@ -359,6 +357,11 @@ class Trainer():
     def train_epoch(self, train_loader, val_loader, relaunch=False):
         self.logger.info("Launch training, start epoch : {}".format(
             self.start_epoch))
+
+        ##### Init Metrics validation
+        metrics_instance = {
+            "F2_score": ut_metrics.F2_score_competition(compute_on_step=False)
+        }
 
         ##### Init Early stopping
         if self.config.configs.get('early_stopping'):
@@ -396,7 +399,7 @@ class Trainer():
             ############################
             #####    VALIDATION    #####
             ############################
-            metrics_validation = self.validation(val_loader)
+            metrics_validation = self.validation(val_loader, metrics_instance)
 
             metrics = metrics_train.copy()
             metrics.update(metrics_validation)

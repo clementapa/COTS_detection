@@ -1,10 +1,8 @@
 import random
 
-import torch
-from torchvision import transforms
 from torchvision.transforms import functional as F
 import albumentations as A
-
+from albumentations.core.transforms_interface import BasicTransform
 
 class Compose(object):
     def __init__(self, transforms):
@@ -32,25 +30,28 @@ class RandomHorizontalFlip(object):
         return image, target
 
 
-class ToTensor(object):
-    def __call__(self, image, target):
-        image = F.to_tensor(image)
-        return image, target
-
-
-def get_transform_albu(train):
+class ToTensor(BasicTransform):
+    def __init__(self, always_apply=True, p=1):
+        super().__init__(always_apply=always_apply, p=p)
+    
+    @property
+    def targets(self):
+        return {'image': self.apply}
+    
+    def apply(self, img, **params):
         
-    transforms = []
-    transforms.append(A.RandomSizedBBoxSafeCrop(width=640, height=360, erosion_rate=0.2)) # FIXME taille image entrainement doit etre égale à la taille des images de validation?
-    transforms.append(A.HorizontalFlip(p=0.5))
-    transforms.append(A.RandomBrightnessContrast(p=0.6))
-
-    return A.Compose(transforms, bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))
+        image = F.to_tensor(img)
+        return image
 
 def get_transform(train):
-
+        
     transforms = []
+    
+    if train:
+        transforms.append(A.RandomSizedBBoxSafeCrop(width=640, height=360, erosion_rate=0.2)) # FIXME taille image entrainement doit etre égale à la taille des images de validation?
+        transforms.append(A.HorizontalFlip(p=0.5))
+        transforms.append(A.RandomBrightnessContrast(p=0.6))
+        
     transforms.append(ToTensor())
-    if not train: return Compose(transforms)
-
-    return Compose(transforms)
+    
+    return A.Compose(transforms, bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))

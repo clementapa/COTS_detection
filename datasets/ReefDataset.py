@@ -87,16 +87,14 @@ class ReefDataset(Dataset):
 
         # transformations using albumentation library
         if self.transforms is not None:
-            if self.transforms.get("albu"):
-                transformed = self.transforms["albu"](
-                    image=np.array(img),
-                    bboxes=target['boxes'],
-                    class_labels=target['labels'])
-                img = transformed['image']
-                target["boxes"] = torch.as_tensor(transformed['bboxes'])
-                target["labels"] = torch.as_tensor(transformed['class_labels'])
+            transformed = self.transforms(image=np.array(img),
+                                          bboxes=target['boxes'],
+                                          class_labels=target['labels'])
+            img = transformed['image']
+            target["boxes"] = torch.as_tensor(transformed['bboxes'])
+            target["labels"] = torch.as_tensor(transformed['class_labels'])
 
-            img, target = self.transforms["normal"](img, target)
+        # img, target = self.transforms["normal"](img, target)
 
         return img, target
 

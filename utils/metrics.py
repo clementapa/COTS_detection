@@ -2,6 +2,9 @@
 https://www.kaggle.com/bamps53/competition-metric-implementation
 """
 import numpy as np
+import torch
+from torchmetrics import Metric
+
 
 def calc_iou(bboxes1, bboxes2, bbox_mode='xywh'):
     assert len(bboxes1.shape) == 2 and bboxes1.shape[1] == 4
@@ -140,3 +143,18 @@ def calc_f2_score(gt_bboxes_list, pred_bboxes_list, verbose=False):
             num_pred = len(pred_bboxes)
             print(f'num_gt:{num_gt:<3} num_pred:{num_pred:<3} tp:{tp:<3} fp:{fp:<3} fn:{fn:<3}')
     return f_beta(tps, fps, fns, beta=2)
+
+class F2_score_competition(Metric):
+    def __init__(self, compute_on_step=False):
+        super().__init__(compute_on_step=compute_on_step)
+
+        self.add_state("valeur", default=torch.tensor(0.0, dtype=torch.float), dist_reduce_fx="sum")
+        self.add_state("cpt", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, gt_bboxes_list: list, pred_bboxes_list: list):
+
+        self.valeur += torch.tensor(calc_f2_score(gt_bboxes_list, pred_bboxes_list))
+        self.cpt += 1
+
+    def compute(self):
+        return self.valeur / self.cpt
