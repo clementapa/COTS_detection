@@ -317,6 +317,8 @@ class Trainer():
                               leave=False)
 
         metrics = {}
+        
+        metrics_inst["F2_score"].reset()
 
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(valid_iterator):
@@ -340,7 +342,7 @@ class Trainer():
                 if self.fast_dev_run:
                     break
 
-        metrics["F2_score"] = metrics_inst["F2_score"].compute()
+        metrics["F2_score"] = metrics_inst["F2_score"].compute() # FIXME zero F2_score
         metrics = {'validation/' + k: v for k, v in metrics.items()}
 
         self.wandb_logger.log_images((data, targets),
