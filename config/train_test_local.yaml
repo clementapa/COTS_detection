@@ -9,7 +9,7 @@ data:
   root_path: ../tensorflow-great-barrier-reef/train_images
 
 configs:
-  epoch: 10
+  epoch: 50
   it: 200
   batch_size: 2
   seed: 1
@@ -39,5 +39,5 @@ scheduler:
     mode: "min"
     verbose: True
     factor: 0.1
-    patience: 1
+    patience: 4
   monitor: "train/loss_sum"

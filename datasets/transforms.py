@@ -30,7 +30,7 @@ class RandomHorizontalFlip(object):
         return image, target
 
 
-class ToTensor(BasicTransform):
+class ToTensor(BasicTransform): # FIXME peut être erreur dû à cette transformation, faut-il normaliser les images ?
     def __init__(self, always_apply=True, p=1):
         super().__init__(always_apply=always_apply, p=p)
     
@@ -39,7 +39,6 @@ class ToTensor(BasicTransform):
         return {'image': self.apply}
     
     def apply(self, img, **params):
-        
         image = F.to_tensor(img)
         return image
 
@@ -48,7 +47,7 @@ def get_transform(train):
     transforms = []
     
     if train:
-        transforms.append(A.RandomSizedBBoxSafeCrop(width=640, height=360, erosion_rate=0.2)) # FIXME taille image entrainement doit etre égale à la taille des images de validation?
+        transforms.append(A.RandomSizedBBoxSafeCrop(width=840, height=360, erosion_rate=0.2)) # FIXME taille image entrainement doit etre égale à la taille des images de validation?
         transforms.append(A.HorizontalFlip(p=0.5))
         transforms.append(A.RandomBrightnessContrast(p=0.6))
         

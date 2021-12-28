@@ -36,6 +36,15 @@ class Trainer():
         if args.batch_size:
             self.config.configs.batch_size = args.batch_size
 
+        if args.csv_file:
+            self.config.data.csv_file = args.csv_file
+
+        if args.root_path:
+            self.config.data.root_path = args.root_path
+
+        if args.it:
+            self.config.configs.it = args.it
+
         if args.notebook:
             from tqdm.notebook import tqdm
 
@@ -360,7 +369,7 @@ class Trainer():
         self.logger.info("Launch training, start epoch : {}".format(
             self.start_epoch))
 
-        ##### Init Metrics validation
+        ##### Init Metrics validation # TODO metrics instance {"train": , "validation": } en variable de classe
         metrics_instance = {
             "F2_score": ut_metrics.F2_score_competition(compute_on_step=False)
         }

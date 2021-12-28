@@ -37,6 +37,16 @@ parser.add_argument(
     type=int,
     help='If you want to relaunch the training to do more epoch'
 )  # to implement
+parser.add_argument('--csv_file',
+                    type=str,
+                    help='csv file')
+parser.add_argument('--root_path',
+                    type=str,
+                    help='root_path train_image')
+parser.add_argument('--it',
+                    type=str,
+                    help='root_path train_image')
+                    
 
 args = parser.parse_args()
 
