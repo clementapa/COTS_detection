@@ -3,6 +3,7 @@ import random
 from torchvision.transforms import functional as F
 import albumentations as A
 from albumentations.core.transforms_interface import BasicTransform
+from torchvision.transforms import ToTensor as transToTensor
 
 class Compose(object):
     def __init__(self, transforms):
@@ -39,7 +40,7 @@ class ToTensor(BasicTransform): # FIXME peut être erreur dû à cette transfor
         return {'image': self.apply}
     
     def apply(self, img, **params):
-        image = F.to_tensor(img)
+        image = transToTensor()(img)
         return image
 
 def get_transform(train):
