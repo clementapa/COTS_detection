@@ -298,15 +298,15 @@ class Trainer():
             train_iterator.set_description("Training... (loss=%2.5f)" %
                                            loss.data.item())
 
-            if batch_idx > self.config.configs.get('it', 0):
-                break
-
             loss_dict['loss_sum'] = loss
             loss_dict = {
                 'train/' + k: v.detach().cpu().numpy()
                 for k, v in loss_dict.items()
             }
             self.wandb_logger.run.log(loss_dict)
+
+            if batch_idx >= self.config.configs.get('it', 100000):
+                break
 
             if self.fast_dev_run:
                 break
