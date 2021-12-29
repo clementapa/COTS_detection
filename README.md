@@ -49,6 +49,8 @@ Maybe try (Sparse RCNN and others)
 - The competition metrics is the F2-score, so, tackle FN is more important than FP. So, False Positive are tolerate.
 - All images in train_images have a size of 1280x720 (WxH)
 - A video containes several sequences (split dataset by sequence ?) 
+## Suggestion
+- [ ] train and validation same size different of the original size then for test inference on image of the same size then resize 
 
 ## Sequence repartition with bounding boxes
           Video_ID  Sequence  len_seq  nb BB

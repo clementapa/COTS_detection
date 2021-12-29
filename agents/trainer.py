@@ -308,13 +308,13 @@ class Trainer():
             }
             self.wandb_logger.run.log(loss_dict)
 
+            self.wandb_logger.log_images((data, targets), "train", 5)
+
             if batch_idx >= self.config.configs.get('it', 100000):
                 break
 
             if self.fast_dev_run:
                 break
-
-            self.wandb_logger.log_images((data, targets), "train", 5)
 
         return loss_dict
 
