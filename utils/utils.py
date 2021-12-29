@@ -6,10 +6,11 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from ast import literal_eval
 import cv2
 
-def import_class(name, instantiate = None):
-    
+
+def import_class(name, instantiate=None):
+
     namesplit = name.split(".")
-    module = import_module(".".join(namesplit[:-1])) 
+    module = import_module(".".join(namesplit[:-1]))
     imported_class = getattr(module, namesplit[-1])
 
     if imported_class:
@@ -17,7 +18,8 @@ def import_class(name, instantiate = None):
             return imported_class(**instantiate)
         else:
             return imported_class
-    raise Exception ("Class {} can be imported".format(import_class))
+    raise Exception("Class {} can be imported".format(import_class))
+
 
 class WrapperDataset:
     def __init__(self, dataset, transform=None, target_transform=None):
@@ -36,13 +38,14 @@ class WrapperDataset:
     def __len__(self):
         return len(self.dataset)
 
+
 def reset_weights(m, fine_tune):
     '''
         Try resetting model weights to avoid
         weight leakage.
     '''
 
-    if fine_tune : # reset only classifier weights
+    if fine_tune:  # reset only classifier weights
         classifier_layer = [l for l in m.children()][-1]
         for l in classifier_layer:
             if hasattr(l, 'reset_parameters'):
@@ -55,55 +58,75 @@ def reset_weights(m, fine_tune):
                     print(f'Reset trainable parameters of layer = {l}')
                     l.reset_parameters()
 
+
 def get_subsets(dataset, train_size=0.8):
 
     X = [img for img, label in dataset]
     y = [label for img, label in dataset]
 
-    SSS = StratifiedShuffleSplit(n_splits=1, random_state=1, train_size=train_size)
+    SSS = StratifiedShuffleSplit(n_splits=1,
+                                 random_state=1,
+                                 train_size=train_size)
     train_ids, val_ids = next(iter(SSS.split(X, y)))
     train_subset = torch.utils.data.Subset(dataset, train_ids)
     val_subset = torch.utils.data.Subset(dataset, val_ids)
-    
+
     repartition_database(train_subset, val_subset)
 
     return train_subset, val_subset
 
+
 def draw_predictions_and_targets(img, pred_bboxes, target_bboxes):
     img_pred = img.copy()
     img_targ = img.copy()
-    # predictions 
+    # predictions
     if len(pred_bboxes) > 0:
-        pred_bboxes = pred_bboxes[pred_bboxes[:,0].argsort()[::-1]] # sort by conf
+        pred_bboxes = pred_bboxes[pred_bboxes[:, 0].argsort()
+                                  [::-1]]  # sort by conf
         for bbox in pred_bboxes:
             conf = bbox[0]
             x0, y0, x1, y1 = bbox[1:].round().astype(int)
-            cv2.rectangle(img_pred, (x0, y0),
+            cv2.rectangle(
+                img_pred,
+                (x0, y0),
                 (x1, y1),
-                (0, 255, 255), thickness=2,)
+                (0, 255, 255),
+                thickness=2,
+            )
             cv2.putText(
                 img_pred,
                 f"{conf:.2}",
-                (x0, max(0, y0-5)),
+                (x0, max(0, y0 - 5)),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (0, 0, 255),
                 thickness=1,
             )
 
-    img_targ_pred = img_pred.copy()        
+    img_targ_pred = img_pred.copy()
     # target_bboxes
     if len(target_bboxes) > 0:
         for bbox in target_bboxes:
             x0, y0, x1, y1 = bbox[:].round().astype(int)
-            cv2.rectangle(img_targ, (x0, y0),
+            cv2.rectangle(
+                img_targ,
+                (x0, y0),
                 (x1, y1),
-                (255, 0, 0), thickness=2,)
-            cv2.rectangle(img_targ_pred, (x0, y0),
+                (255, 0, 0),
+                thickness=2,
+            )
+            cv2.rectangle(
+                img_targ_pred,
+                (x0, y0),
                 (x1, y1),
-                (255, 0, 0), thickness=2,)
+                (255, 0, 0),
+                thickness=2,
+            )
 
     return img, img_targ, img_pred, img_targ_pred
 
+
 def resize(img, coeff):
-    return cv2.resize(img, dsize=(img.shape[1]//coeff, img.shape[0]//coeff), interpolation=cv2.INTER_LINEAR)
+    return cv2.resize(img,
+                      dsize=(img.shape[1] // coeff, img.shape[0] // coeff),
+                      interpolation=cv2.INTER_LINEAR)

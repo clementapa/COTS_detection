@@ -290,7 +290,7 @@ class Trainer():
 
             loss_dict = self.model(images, targets)
             loss = sum(l for l in loss_dict.values())
-
+            print(loss)
             # backpropagation
             self.optimizer.zero_grad()
             loss.backward()
