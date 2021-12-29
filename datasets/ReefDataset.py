@@ -90,8 +90,8 @@ class ReefDataset(Dataset):
             transformed = self.transforms(image=np.array(img),
                                           bboxes=target['boxes'],
                                           class_labels=target['labels'])
-            img = torch.as_tensor(transformed['image'], dtype=torch.float64)
-            target["boxes"] = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
+            img = torch.as_tensor(transformed['image'])
+            target["boxes"] = torch.as_tensor(transformed['bboxes'])
             target["labels"] = torch.as_tensor(transformed['class_labels'])
         
         print(img)
