@@ -64,7 +64,7 @@ class Trainer():
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.logger.info(f"Device : {self.device}")
-        if torch.cuda.is_available(): print(torch.cuda.get_device_name(0))
+        if torch.cuda.is_available(): self.logger.info(torch.cuda.get_device_name(0))
 
         # Seed
         torch.manual_seed(self.config.configs.get("seed", 1))
@@ -290,7 +290,6 @@ class Trainer():
 
             loss_dict = self.model(images, targets)
             loss = sum(l for l in loss_dict.values())
-            print(loss)
             # backpropagation
             self.optimizer.zero_grad()
             loss.backward()
