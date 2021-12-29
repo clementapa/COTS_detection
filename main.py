@@ -13,7 +13,7 @@ parser.add_argument('--config_file',
 parser.add_argument('--log', type=str, default="DEBUG", help='Level of log')
 parser.add_argument('--fast_dev_run',
                     type=bool,
-                    default=True,
+                    default=False,
                     help='fast dev run launch only one batch')
 parser.add_argument('--num_workers',
                     type=int,
