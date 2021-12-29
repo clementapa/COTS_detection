@@ -18,7 +18,7 @@ configs:
   early_stopping:
     monitor: "train/loss_sum"
     mode: "min"
-    patience: 5
+    patience: 10
     
 model:
   name: model.FasterRCNN.FasterRCNN
@@ -38,5 +38,5 @@ scheduler:
     mode: "min"
     verbose: True
     factor: 0.1
-    patience: 4
+    patience: 5
   monitor: "train/loss_sum"
