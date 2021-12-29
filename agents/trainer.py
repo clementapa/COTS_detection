@@ -311,7 +311,7 @@ class Trainer():
             if self.fast_dev_run:
                 break
 
-        self.wandb_logger.log_images((data, targets), "train", 5)
+            self.wandb_logger.log_images((data, targets), "train", 5)
 
         return loss_dict
 
