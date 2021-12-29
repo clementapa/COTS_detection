@@ -9,18 +9,18 @@ The goal of this competition is to accurately identify starfish in real-time by 
 ## Task suggested (to fill and use suggestion in the preproposal project)
 ### Handle with the dataset and metrics
      - [ ] Analyse dataset (split train/validation) (3 videos, find a split allowing to properly assess the ability of the model to generalize) 
-     - [ ] Dataloader Pytorch
-     - [ ] Script for metrics F2-score, Recall, Precision
+     - [x] Dataloader Pytorch
+     - [x] Script for metrics F2-score, Recall, Precision
 Split possible: 
 -    totally random (loss of temporality)
 -    by videos: train: 0 & 1, val: 2 ?
 -    by sequences
 ### To add (clément)
-- [ ] Class wandblogger:
+- [x] Class wandblogger:
      - [X] log all in wandblogger (checkpoint/weight, metrics, config)
      - [X] visual images predictions of training (correctly) afficher n dernières images à la fin de chaque batch
      - [ ] visual video sequence (validation (image dans l'ordre)
-     - [ ] torchmetrics pour les metrics?
+     - [x] torchmetrics pour les metrics?
 - [X] loss regression, classif log dans wandb, IoU, F2score
 - [X] early stopping
 - [X] pour faster rcnn mettre "outputs" "preds" etc dictionnaire
@@ -29,6 +29,7 @@ Split possible:
 - [X] enlever tout les trucs qui servent à rien (image classification)
 - [X] option fast dv run si activé juste 2 batch train et val puis fin entrainement
 - [x] data augmentation avec albumentation
+- [ ] librairie detectron
 
 Note: the test set keeps the temporality!\
 "The API serves the images one by one, in order by video and frame number, as pixel arrays"

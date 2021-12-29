@@ -45,6 +45,9 @@ class Trainer():
         if args.it:
             self.config.configs.it = args.it
 
+        if args.epoch:
+            self.config.configs.epoch = args.epoch
+
         if args.notebook:
             from tqdm.notebook import tqdm
 
@@ -282,7 +285,7 @@ class Trainer():
                                   'it', len(train_loader)),
                               leave=False)
 
-        for batch_idx, (data, targets) in enumerate(train_iterator):
+        for batch_idx, (data, targets) in enumerate(train_iterator): # put coefficient for each loss 
 
             images = list(image.to(self.device) for image in data)
             targets = [{k: v.to(self.device)

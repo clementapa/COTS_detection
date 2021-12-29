@@ -45,8 +45,10 @@ parser.add_argument('--root_path',
                     help='root_path train_image')
 parser.add_argument('--it',
                     type=str,
-                    help='root_path train_image')
-                    
+                    help='number of iterations')
+parser.add_argument('--epoch',
+                    type=int,
+                    help='number of epoch')                    
 
 args = parser.parse_args()
 
