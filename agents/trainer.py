@@ -311,7 +311,8 @@ class Trainer():
             }
             self.wandb_logger.run.log(loss_dict)
 
-            self.wandb_logger.log_images((data, targets), "train", 5)
+            if batch_idx % 100:
+                self.wandb_logger.log_images((data, targets), "train", 5)
 
             if batch_idx >= self.config.configs.get('it', 100000):
                 break
@@ -357,11 +358,11 @@ class Trainer():
 
                 # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
                 # metrics_inst['MAP'].update(output, targets_map)
-
-                self.wandb_logger.log_images((data, targets),
-                                             "validation",
-                                             5,
-                                             outputs=output)
+                if batch_idx % 100:
+                    self.wandb_logger.log_images((data, targets),
+                                                "validation",
+                                                5,
+                                                outputs=output)
                 if self.fast_dev_run:
                     break
 
