@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(
     description='Script to launch the training',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--config_file',
-                    default="config/train_test_local.yaml",
+                    default="config/config.yaml",
                     type=str,
                     help='Configuration train file')
 parser.add_argument('--log', type=str, default="DEBUG", help='Level of log')
