@@ -7,6 +7,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import albumentations as A
+from .transforms import ToTensor
 
 from utils.logger import init_logger
 
@@ -39,8 +41,10 @@ class ReefDataset(Dataset):
         df = df[['video_id', 'video_frame', 'annotations']]
         self.img_annotations = df
 
-        self.img_annotations = self.img_annotations[
-            self.img_annotations["annotations"] != "[]"]
+        self.train = train
+
+        # self.img_annotations = self.img_annotations[
+        #     self.img_annotations["annotations"] != "[]"]
 
     def __getitem__(self, idx):
 
@@ -82,17 +86,37 @@ class ReefDataset(Dataset):
         target["boxes"] = boxes
         target["labels"] = labels
         # target["image_id"] = image_id
-        # target["area"] = area
-        # target["iscrowd"] = iscrowd
+        target["area"] = area
+        target["iscrowd"] = iscrowd
 
         # transformations using albumentation library
         if self.transforms is not None:
-            transformed = self.transforms(image=np.array(img),
-                                          bboxes=target['boxes'],
-                                          class_labels=target['labels'])
-            img = torch.as_tensor(transformed['image'])
-            target["boxes"] = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
-            target["labels"] = torch.as_tensor(transformed['class_labels'])
+
+            if len(target['boxes']) != 0:
+                transformed = self.transforms(image=np.array(img),
+                                              bboxes=target['boxes'],
+                                              class_labels=target['labels'])
+                img = torch.as_tensor(transformed['image'])
+                target["boxes"] = torch.as_tensor(transformed['bboxes'],
+                                                  dtype=torch.float32)
+                target["labels"] = torch.as_tensor(transformed['class_labels'])
+            else:
+                if self.train:
+                    transforms = []
+                    transforms.append(A.Resize(width=840, height=360))
+                    transforms.append(A.HorizontalFlip(p=0.5))
+                    transforms.append(A.RandomBrightnessContrast(p=0.6))
+                    transforms.append(ToTensor())
+                    transforms = A.Compose(transforms)
+                    transformed = transforms(image=np.array(img))
+                    img = torch.as_tensor(transformed['image'])
+                else:  # negative samples
+                    transforms = []
+                    transforms.append(A.Resize(width=840, height=360))
+                    transforms.append(ToTensor())
+                    transforms = A.Compose(transforms)
+                    transformed = transforms(image=np.array(img))
+                    img = torch.as_tensor(transformed['image'])
 
         return img, target
 

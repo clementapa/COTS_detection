@@ -22,6 +22,7 @@ import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
 import utils.WandbLogger as WandbLogger
+from torchmetrics.detection.map import MAP
 
 
 class Trainer():
@@ -67,7 +68,8 @@ class Trainer():
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.logger.info(f"Device : {self.device}")
-        if torch.cuda.is_available(): self.logger.info(torch.cuda.get_device_name(0))
+        if torch.cuda.is_available():
+            self.logger.info(torch.cuda.get_device_name(0))
 
         # Seed
         torch.manual_seed(self.config.configs.get("seed", 1))
@@ -188,9 +190,9 @@ class Trainer():
                 transforms=T.get_transform(True),
             )
             val_set = ReefDataset(self.config.data.csv_file,
-                                           self.config.data.root_path,
-                                           train=False,
-                                           transforms=T.get_transform(False))
+                                  self.config.data.root_path,
+                                  train=False,
+                                  transforms=T.get_transform(False))
 
             train_loader = torch.utils.data.DataLoader(
                 train_set,
@@ -285,7 +287,8 @@ class Trainer():
                                   'it', len(train_loader)),
                               leave=False)
 
-        for batch_idx, (data, targets) in enumerate(train_iterator): # put coefficient for each loss 
+        for batch_idx, (data, targets) in enumerate(
+                train_iterator):  # put coefficient for each loss
 
             images = list(image.to(self.device) for image in data)
             targets = [{k: v.to(self.device)
@@ -328,8 +331,9 @@ class Trainer():
                               leave=False)
 
         metrics = {}
-        
-        metrics_inst["F2_score"].reset()
+
+        for _, v in metrics_inst.items():
+            v.reset()
 
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(valid_iterator):
@@ -342,24 +346,30 @@ class Trainer():
 
                 gt_bboxes_list = [t['boxes'].cpu().numpy() for t in targets]
                 pred_bboxes_list = [
-                    np.concatenate((pred['scores'].unsqueeze(1).cpu().numpy(),
-                                    pred['boxes'].cpu().numpy()),
-                                   axis=1) for pred in output
+                    np.concatenate(
+                        (pred['scores'].unsqueeze(1).cpu().detach().numpy(),
+                         pred['boxes'].cpu().detach().numpy()),
+                        axis=1) for pred in output
                 ]
 
                 metrics_inst["F2_score"].update(gt_bboxes_list,
                                                 pred_bboxes_list)
 
+                # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
+                # metrics_inst['MAP'].update(output, targets_map)
+
+                self.wandb_logger.log_images((data, targets),
+                                             "validation",
+                                             5,
+                                             outputs=output)
                 if self.fast_dev_run:
                     break
 
-        metrics["F2_score"] = metrics_inst["F2_score"].compute() # FIXME zero F2_score
-        metrics = {'validation/' + k: v for k, v in metrics.items()}
+        metrics = {
+            'validation/' + k: v.compute()
+            for k, v in metrics_inst.items()
+        }
 
-        self.wandb_logger.log_images((data, targets),
-                                     "validation",
-                                     5,
-                                     outputs=output)
         self.wandb_logger.log_videos((data, targets),
                                      "validation")  # TODO implement
 
@@ -373,7 +383,10 @@ class Trainer():
 
         ##### Init Metrics validation # TODO metrics instance {"train": , "validation": } en variable de classe
         metrics_instance = {
-            "F2_score": ut_metrics.F2_score_competition(compute_on_step=False)
+            "F2_score":
+            ut_metrics.F2_score_competition(compute_on_step=False).to(
+                self.device),
+            # "MAP": MAP(compute_on_step=False).to(self.device)
         }
 
         ##### Init Early stopping
