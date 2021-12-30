@@ -22,7 +22,7 @@ import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
 import utils.WandbLogger as WandbLogger
-from torchmetrics.detection.map import MAP
+# from torchmetrics.detection.map import MAP
 
 
 class Trainer():
