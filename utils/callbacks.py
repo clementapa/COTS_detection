@@ -1,6 +1,6 @@
 import torch
 import os, os.path as osp
-
+import wandb
 
 class EarlyStopping():
     def __init__(self, monitor, mode, patience, logger):
@@ -105,6 +105,7 @@ class ModelCheckpoint():
                 )
                 torch.save(model.state_dict(),
                            osp.join(self.run.dir, f"{name}.pth"))
+                wandb.save(osp.join(self.run.dir, f"{name}.pth"), base_path=self.run.dir)
                 self.value_keep = value
         else:
             if value <= self.value_keep:
@@ -113,6 +114,7 @@ class ModelCheckpoint():
                 )
                 torch.save(model.state_dict(),
                            osp.join(self.run.dir, f"{name}.pth"))
+                wandb.save(osp.join(self.run.dir, f"{name}.pth"), base_path=self.run.dir)
                 self.value_keep = value
 
     def _check_metric_name(self, metrics):
@@ -134,3 +136,4 @@ class ModelCheckpoint():
             dict_save['scheduler_state_dict'] = trainer.scheduler.state_dict()
 
         torch.save(dict_save, osp.join(self.run.dir, f"{name}.pth"))
+        wandb.save(osp.join(self.run.dir, f"{name}.pth"), base_path=self.run.dir)
