@@ -43,8 +43,8 @@ class ReefDataset(Dataset):
 
         self.train = train
 
-        # self.img_annotations = self.img_annotations[
-        #     self.img_annotations["annotations"] != "[]"]
+        self.img_annotations = self.img_annotations[
+            self.img_annotations["annotations"] != "[]"]
 
     def __getitem__(self, idx):
 
@@ -100,7 +100,7 @@ class ReefDataset(Dataset):
                 target["boxes"] = torch.as_tensor(transformed['bboxes'],
                                                   dtype=torch.float32)
                 target["labels"] = torch.as_tensor(transformed['class_labels'])
-            else:
+            else: # negative samples
                 if self.train:
                     transforms = []
                     transforms.append(A.Resize(width=840, height=360))
@@ -110,7 +110,7 @@ class ReefDataset(Dataset):
                     transforms = A.Compose(transforms)
                     transformed = transforms(image=np.array(img))
                     img = torch.as_tensor(transformed['image'])
-                else:  # negative samples
+                else:
                     transforms = []
                     transforms.append(A.Resize(width=840, height=360))
                     transforms.append(ToTensor())
