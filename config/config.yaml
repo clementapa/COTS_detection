@@ -18,7 +18,7 @@ configs:
   early_stopping:
     monitor: "validation/F2_score"
     mode: "max"
-    patience: 4
+    patience: 8
 
 model:
   name: model.RetinaNet.RetinaNet
