@@ -88,6 +88,7 @@ Competition BBOX = COCO format [x_min, y_min, width, height]
 batch_size 10 with original size => 15.3Gb
 
 Fix albumentation error in bbox_utils.py:
+```
 def check_bbox(bbox):
     """Check if bbox boundaries are in range 0, 1 and minimums are lesser then maximums"""
     bbox=list(bbox)
@@ -108,3 +109,9 @@ def check_bbox(bbox):
         raise ValueError("x_max is less than or equal to x_min for bbox {bbox}.".format(bbox=bbox))
     if y_max <= y_min:
         raise ValueError("y_max is less than or equal to y_min for bbox {bbox}.".format(bbox=bbox))
+```
+
+## Experiments
+- gallant-morning : faster RCNN without negative samples => 0.354 F2-score competition score (detection threshold 0.5) & 0.4027 F2-score validation (video 2)
+- dry-microwave : faster RCNN with negative samples
+- volcanic-water : faster RCNN without negative samples

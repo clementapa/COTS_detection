@@ -130,3 +130,9 @@ dmypy.json
 
 # wandb
 wandb/*
+
+assets/*
+
+*.pth
+*.mp4
+*.json
