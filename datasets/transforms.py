@@ -48,7 +48,7 @@ def get_transform(train):
     transforms = []
     
     if train:
-        transforms.append(A.RandomSizedBBoxSafeCrop(width=840, height=360, erosion_rate=0.2)) # FIXME taille image entrainement doit etre égale à la taille des images de validation?
+        transforms.append(A.RandomSizedBBoxSafeCrop(width=840, height=360, erosion_rate=0.2))
         transforms.append(A.HorizontalFlip(p=0.5))
         transforms.append(A.RandomBrightnessContrast(p=0.6))
     else:

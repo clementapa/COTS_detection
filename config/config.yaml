@@ -5,8 +5,8 @@ wandb:
   name_run: 
 
 data:
-  csv_file: ../tensorflow-great-barrier-reef/train.csv
-  root_path: ../tensorflow-great-barrier-reef/train_images
+  csv_file: assets/tensorflow-great-barrier-reef/train.csv
+  root_path: assets/tensorflow-great-barrier-reef/train_images
 
 configs:
   epoch: 20
@@ -19,9 +19,9 @@ configs:
     monitor: "validation/F2_score"
     mode: "max"
     patience: 4
-    
+
 model:
-  name: model.FasterRCNN.FasterRCNN
+  name: model.RetinaNet.RetinaNet
   params:
     pretrained: True
     pretrained_backbone: True
@@ -38,5 +38,5 @@ scheduler:
     mode: "max"
     verbose: True
     factor: 0.1
-    patience: 2
+    patience: 5
   monitor: "validation/F2_score"

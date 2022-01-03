@@ -59,33 +59,36 @@ def reset_weights(m, fine_tune):
                     l.reset_parameters()
 
 
-def get_subsets(dataset, train_size=0.8):
+# def get_subsets(dataset, train_size=0.8):
 
-    X = [img for img, label in dataset]
-    y = [label for img, label in dataset]
+#     X = [img for img, label in dataset]
+#     y = [label for img, label in dataset]
 
-    SSS = StratifiedShuffleSplit(n_splits=1,
-                                 random_state=1,
-                                 train_size=train_size)
-    train_ids, val_ids = next(iter(SSS.split(X, y)))
-    train_subset = torch.utils.data.Subset(dataset, train_ids)
-    val_subset = torch.utils.data.Subset(dataset, val_ids)
+#     SSS = StratifiedShuffleSplit(n_splits=1,
+#                                  random_state=1,
+#                                  train_size=train_size)
+#     train_ids, val_ids = next(iter(SSS.split(X, y)))
+#     train_subset = torch.utils.data.Subset(dataset, train_ids)
+#     val_subset = torch.utils.data.Subset(dataset, val_ids)
 
-    repartition_database(train_subset, val_subset)
+#     repartition_database(train_subset, val_subset)
 
-    return train_subset, val_subset
+#     return train_subset, val_subset
 
 
-def draw_predictions_and_targets(img, pred_bboxes, target_bboxes):
+def draw_predictions_and_targets(img, pred_bboxes, target_bboxes=None):
     img_pred = img.copy()
-    img_targ = img.copy()
     # predictions
     if len(pred_bboxes) > 0:
-        pred_bboxes = pred_bboxes[pred_bboxes[:, 0].argsort()
-                                  [::-1]]  # sort by conf
+        if len(pred_bboxes[0]) == 5:
+            pred_bboxes = pred_bboxes[pred_bboxes[:, 0].argsort()
+                                    [::-1]]  # sort by conf
         for bbox in pred_bboxes:
-            conf = bbox[0]
-            x0, y0, x1, y1 = bbox[1:].round().astype(int)
+            if len(bbox) == 5:
+                conf = bbox[0]
+                x0, y0, x1, y1 = bbox[1:].round().astype(int)
+            else:
+                x0, y0, x1, y1 = bbox[:].round().astype(int)
             cv2.rectangle(
                 img_pred,
                 (x0, y0),
@@ -93,37 +96,46 @@ def draw_predictions_and_targets(img, pred_bboxes, target_bboxes):
                 (0, 255, 255),
                 thickness=2,
             )
-            cv2.putText(
-                img_pred,
-                f"{conf:.2}",
-                (x0, max(0, y0 - 5)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 0, 255),
-                thickness=1,
-            )
+            if len(bbox) == 5:
+                cv2.putText(
+                    img_pred,
+                    f"{conf:.2}",
+                    (x0, max(0, y0 - 5)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 0, 255),
+                    thickness=1,
+                )
+    if target_bboxes != None:
+        img_targ = img.copy()
+        img_targ_pred = img_pred.copy()
+        # target_bboxes
+        if len(target_bboxes) > 0:
+            for bbox in target_bboxes:
+                x0, y0, x1, y1 = bbox[:].round().astype(int)
+                cv2.rectangle(
+                    img_targ,
+                    (x0, y0),
+                    (x1, y1),
+                    (255, 0, 0),
+                    thickness=2,
+                )
+                cv2.rectangle(
+                    img_targ_pred,
+                    (x0, y0),
+                    (x1, y1),
+                    (255, 0, 0),
+                    thickness=2,
+                )
+    else:
+        return {"img": img, "img_pred": img_pred}
 
-    img_targ_pred = img_pred.copy()
-    # target_bboxes
-    if len(target_bboxes) > 0:
-        for bbox in target_bboxes:
-            x0, y0, x1, y1 = bbox[:].round().astype(int)
-            cv2.rectangle(
-                img_targ,
-                (x0, y0),
-                (x1, y1),
-                (255, 0, 0),
-                thickness=2,
-            )
-            cv2.rectangle(
-                img_targ_pred,
-                (x0, y0),
-                (x1, y1),
-                (255, 0, 0),
-                thickness=2,
-            )
-
-    return img, img_targ, img_pred, img_targ_pred
+    return {
+        "img": img,
+        "img_pred": img_pred,
+        "img_targ": img_targ,
+        "img_targ_pred": img_targ_pred
+    }
 
 
 def resize(img, coeff):
