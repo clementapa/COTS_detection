@@ -108,12 +108,13 @@ class Trainer():
 
         if args.load_checkpoint:
             self.logger.info("Loading checkpoint {}".format(args.load_checkpoint))
-            checkpoint = torch.load(args.load_checkpoint)
+            checkpoint = torch.load(args.load_checkpoint, map_location=self.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            self.loss = checkpoint['loss']
 
+            if hasattr(self, 'loss'): self.loss = checkpoint['loss']
+            if hasattr(self, 'scheduler'):
+                self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         #     if (args.checkpoint):
         #         self.start_epoch = checkpoint['epoch']
         #     else:
