@@ -106,23 +106,20 @@ class Trainer():
             self.scheduler = scheduler_cls(self.optimizer,
                                            **self.config.scheduler.params)
 
-        # if args.checkpoint or args.relaunch:
-        #     checkpoint_file = osp.join(osp.join(self.REPO_EXPERIENCE, "train"),
-        #                                "checkpoint.pth")
-        #     self.logger.info("Loading checkpoint {}".format(checkpoint_file))
-        #     checkpoint = torch.load(checkpoint_file)
-        #     self.model.load_state_dict(checkpoint['model_state_dict'])
-        #     self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        #     # self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        #     self.loss = checkpoint['loss']
+        if args.load_checkpoint:
+            self.logger.info("Loading checkpoint {}".format(args.load_checkpoint))
+            checkpoint = torch.load(args.load_checkpoint)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            self.loss = checkpoint['loss']
 
         #     if (args.checkpoint):
         #         self.start_epoch = checkpoint['epoch']
         #     else:
         #         self.start_epoch = 1
         # else:
-        if True:
-            self.start_epoch = 1
+        self.start_epoch = 1
 
         ##############################
         #####  PREPARATION DATA #####

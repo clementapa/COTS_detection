@@ -44,11 +44,14 @@ parser.add_argument('--root_path',
                     type=str,
                     help='root_path train_image')
 parser.add_argument('--it',
-                    type=str,
+                    type=int,
                     help='number of iterations')
 parser.add_argument('--epoch',
                     type=int,
                     help='number of epoch')                    
+parser.add_argument('--load_checkpoint',
+                    type=str,
+                    help='checkpoint path')
 
 args = parser.parse_args()
 
