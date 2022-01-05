@@ -9,7 +9,7 @@ data:
   root_path: assets/tensorflow-great-barrier-reef/train_images
 
 configs:
-  epoch: 20
+  epoch: 30
   batch_size: 2
   seed: 1
   checkpoint:
@@ -21,10 +21,11 @@ configs:
     patience: 8
 
 model:
-  name: model.RetinaNet.RetinaNet
+  name: model.FasterRCNN.FasterRCNN
   params:
     pretrained: True
     pretrained_backbone: True
+    # backbone_vit: True
 
 optimizer:
   name: torch.optim.SGD

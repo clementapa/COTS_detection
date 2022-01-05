@@ -43,8 +43,9 @@ class ReefDataset(Dataset):
 
         self.train = train
 
-        self.img_annotations = self.img_annotations[
-            self.img_annotations["annotations"] != "[]"]
+        if train:
+            self.img_annotations = self.img_annotations[
+                self.img_annotations["annotations"] != "[]"]
 
     def __getitem__(self, idx):
 

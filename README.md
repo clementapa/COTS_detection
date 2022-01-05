@@ -30,6 +30,7 @@ Split possible:
 - [X] option fast dv run si activé juste 2 batch train et val puis fin entrainement
 - [x] data augmentation avec albumentation
 - [ ] librairie detectron
+- [ ] training with negative samples in the validation ?
 
 Note: the test set keeps the temporality!\
 "The API serves the images one by one, in order by video and frame number, as pixel arrays"
