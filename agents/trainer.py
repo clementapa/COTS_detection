@@ -22,7 +22,7 @@ import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
 import utils.WandbLogger as WandbLogger
-# from torchmetrics.detection.map import MAP
+from torchmetrics.detection.map import MAP
 
 
 class Trainer():
@@ -80,7 +80,7 @@ class Trainer():
         model_cls = utils.import_class(self.config.model.name)
         self.model = model_cls(**self.config.model.get('params', {}))
         self.model.to(self.device)
-        # self.logger.info("Model : {}".format(self.model))
+        self.logger.info("Model : {}".format(self.model))
         self.wandb_logger.run.watch(self.model)
 
         if self.config.get('criterion'):
@@ -107,14 +107,17 @@ class Trainer():
                                            **self.config.scheduler.params)
 
         if args.load_checkpoint:
-            self.logger.info("Loading checkpoint {}".format(args.load_checkpoint))
-            checkpoint = torch.load(args.load_checkpoint, map_location=self.device)
+            self.logger.info("Loading checkpoint {}".format(
+                args.load_checkpoint))
+            checkpoint = torch.load(args.load_checkpoint,
+                                    map_location=self.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
             if hasattr(self, 'loss'): self.loss = checkpoint['loss']
             if hasattr(self, 'scheduler'):
-                self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+                self.scheduler.load_state_dict(
+                    checkpoint['scheduler_state_dict'])
         #     if (args.checkpoint):
         #         self.start_epoch = checkpoint['epoch']
         #     else:
@@ -269,8 +272,7 @@ class Trainer():
         #     self.logger.info(f'Average Accuracy on {k} Fold: {average}')
 
         # else:
-        if True:
-            self.train_epoch(train_loader, val_loader, relaunch=args.relaunch)
+        self.train_epoch(train_loader, val_loader, relaunch=args.relaunch)
 
     def train(self, epoch, train_loader):
 
@@ -288,11 +290,14 @@ class Trainer():
         for batch_idx, (data, targets) in enumerate(
                 train_iterator):  # put coefficient for each loss
 
-            images = list(image.to(self.device) for image in data)
-            targets = [{k: v.to(self.device)
-                        for k, v in t.items()} for t in targets]
+            if "yolo" not in self.config.model.name:
+                images = list(image.to(self.device) for image in data)
+                targets = [{k: v.to(self.device)
+                            for k, v in t.items()} for t in targets]
+            else:
+                images = torch.tensor(np.stack(list(data))) # TODO targets for yoloX
 
-            loss_dict = self.model(images, targets)
+            loss_dict = self.model(images, targets) # FIXME error for yoloX 
             loss = sum(l for l in loss_dict.values())
             # backpropagation
             self.optimizer.zero_grad()
@@ -337,9 +342,12 @@ class Trainer():
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(valid_iterator):
 
-                images = list(image.to(self.device) for image in data)
-                targets = [{k: v.to(self.device)
-                            for k, v in t.items()} for t in targets]
+                if "yolo" not in self.config.model.name:
+                    images = list(image.to(self.device) for image in data)
+                    targets = [{k: v.to(self.device)
+                                for k, v in t.items()} for t in targets]
+                else:
+                    pass
 
                 output = self.model(images, targets)
 
@@ -354,13 +362,21 @@ class Trainer():
                 metrics_inst["F2_score"].update(gt_bboxes_list,
                                                 pred_bboxes_list)
 
-                # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
-                # metrics_inst['MAP'].update(output, targets_map)
+                # for t in targets:
+                #     t['boxes'] = t['boxes'].cpu()
+                #     if len(t['boxes'])==0:
+                #         t['labels'] = torch.tensor(np.array([]), dtype=torch.int64)
+                #     else:
+                #         t['labels'] = t['labels'].cpu()
+                #     # targets_map = {'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()}
+
+                # # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
+                # metrics_inst['MAP'].update(output, targets)
                 if batch_idx % 100 == 0:
                     self.wandb_logger.log_images((data, targets),
-                                                "validation",
-                                                5,
-                                                outputs=output)
+                                                 "validation",
+                                                 5,
+                                                 outputs=output)
                 if self.fast_dev_run:
                     break
 

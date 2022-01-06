@@ -31,15 +31,24 @@ Split possible:
 - [x] data augmentation avec albumentation
 - [ ] librairie detectron
 - [ ] training with negative samples in the validation ?
+- [ ] essayer d'autres optimizer
+- [ ] calculer loss validation (classification, regression)
+- [ ] Essayer d'autres splits avec distribution 
+- [ ] implementer différentes convention bounding boxes (Pascal Voc, albumentations, coco, yolo)
+- [ ] Faster RCNN et SSD comprendre
+- [ ] test: tout shuffle (randomsplit) (voir gap avec le test)
+- [ ] cross validation avec tout shuffle
+- [ ] cross validation sur les séquences (En faisant attention avec le nbre de boxes)
 
 Note: the test set keeps the temporality!\
 "The API serves the images one by one, in order by video and frame number, as pixel arrays"
 ### Architectures 
-     - [ ] Mask RCNN + CNN in backbone 
+     - [x] Faster RCNN + CNN in backbone 
+     - [x] RetinaNet + CNN in backbone 
      - [ ] Yolo + CNN in backbone 
-     - [ ] Mask RCNN + ViT in backbone 
+     - [ ] Faster RCNN + ViT in backbone 
      - [ ] Yolo + ViT in backbone
-     - [ ] Yolo/Mask RCNN + Dynamic Head (head of classification with attention) + ViT in backbone
+     - [ ] Yolo/Faster RCNN + Dynamic Head (head of classification with attention) + ViT in backbone
 Maybe try (Sparse RCNN and others)
 ### Learning methods 
      - [ ] Unsupervised pre-training (Up-detr)
@@ -75,7 +84,8 @@ Maybe try (Sparse RCNN and others)
      17         2     26651     1525     29
      18         2     22643     1248   2349
      19         2     29859     2988     71
-
+Image with annotations: 4,919
+Total images: 23,501
 ## Annotation details
 <mark>video_id</mark> - ID number of the video the image was part of. The video ids are not meaningfully ordered.\
 <mark>sequence</mark> - ID of a gap-free subset of a given video. The sequence ids are not meaningfully ordered.\
