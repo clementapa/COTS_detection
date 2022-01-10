@@ -131,7 +131,7 @@ dmypy.json
 # wandb
 wandb/*
 
-assets/*
+assets/tensorflow*
 
 *.pth
 *.mp4
