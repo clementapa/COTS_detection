@@ -15,12 +15,12 @@ class YOLOX(nn.Module):
     and detection results during test.
     """
 
-    def __init__(self, num_classes, backbone=None, head=None):
+    def __init__(self, num_classes, depth=1.0, width=1.0, backbone=None, head=None):
         super().__init__()
         if backbone is None:
-            backbone = YOLOPAFPN()
+            backbone = YOLOPAFPN(depth=depth, width=width)
         if head is None:
-            head = YOLOXHead(num_classes)
+            head = YOLOXHead(num_classes, width=width)
 
         self.backbone = backbone
         self.head = head
