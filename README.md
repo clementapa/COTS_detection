@@ -4,7 +4,7 @@
 Kaggle challenge TensorFlow - Help Protect the Great Barrier Reef. 
 The goal of this competition is to accurately identify starfish in real-time by building an object detection model trained on underwater videos of coral reefs.
 
-![starfish](images/imageRD.png)
+![starfish](assets/imageRD.png)
 
 ## Task suggested (to fill and use suggestion in the preproposal project)
 ### Handle with the dataset and metrics
@@ -49,6 +49,7 @@ Note: the test set keeps the temporality!\
      - [ ] Faster RCNN + ViT in backbone 
      - [ ] Yolo + ViT in backbone
      - [ ] Yolo/Faster RCNN + Dynamic Head (head of classification with attention) + ViT in backbone
+     - [ ] Ensemble learning with each fold
 Maybe try (Sparse RCNN and others)
 ### Learning methods 
      - [ ] Unsupervised pre-training (Up-detr)
