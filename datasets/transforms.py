@@ -58,6 +58,8 @@ def get_transform(train, augmentation = None, format="pascal_voc"):
         transforms.append(A.HorizontalFlip(p=0.5))
         transforms.append(A.VerticalFlip(p=0.5))
         transforms.append(A.RandomBrightnessContrast(p=0.6))
+        transforms.append(A.ColorJitter(p=0.6))
+        transforms.append(A.RandomFog(p=0.6, fog_coef_lower=0.2, fog_coef_upper=0.5, alpha_coef=0.08))
     else:
         transforms.append(A.Resize(width=augmentation.size.w, height=augmentation.size.h))
 
