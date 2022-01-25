@@ -15,9 +15,9 @@ parser.add_argument('--fast_dev_run',
                     type=bool,
                     default=False,
                     help='fast dev run launch only one batch')
-parser.add_argument('--test',
+parser.add_argument('--no_test',
                     type=bool,
-                    default=True,
+                    default=False,
                     help='fast dev run launch only one batch')
 parser.add_argument('--num_workers',
                     type=int,
