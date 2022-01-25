@@ -265,8 +265,9 @@ class YOLOXHead(nn.Module):
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
 
-        # calculate targets
-        nlabel = (labels.sum(dim=2) > 0).sum(dim=1)  # number of objects
+        # calculate targets # FIXME Peut etre que c'est pas bon
+        # nlabel = (labels.sum(dim=2) > 0).sum(dim=1)  # number of objects 
+        nlabel = [len(t) for t in labels]
 
         total_num_anchors = outputs.shape[1]
         x_shifts = torch.cat(x_shifts, 1)  # [1, n_anchors_all]
@@ -294,8 +295,10 @@ class YOLOXHead(nn.Module):
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
-                gt_bboxes_per_image = labels[batch_idx, :num_gt, 1:5]
-                gt_classes = labels[batch_idx, :num_gt, 0]
+                # gt_bboxes_per_image = labels[batch_idx, :num_gt, 1:5]
+                # gt_classes = labels[batch_idx, :num_gt, 0]
+                gt_bboxes_per_image = labels[batch_idx][:num_gt, 1:5]
+                gt_classes = (labels[batch_idx][ :num_gt, 0]).int()
                 bboxes_preds_per_image = bbox_preds[batch_idx]
 
                 try:
