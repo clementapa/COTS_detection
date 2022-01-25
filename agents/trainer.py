@@ -56,7 +56,7 @@ class Trainer():
         self.fast_dev_run = args.fast_dev_run
 
         self.wandb_logger = WandbLogger(project=self.config.wandb.name_project,
-                                        entity=None if args.no_test else self.config.wandb.get("entity"),
+                                        entity=self.config.wandb.get("entity") if args.no_test else None,
                                         name=self.config.wandb.get("name_run"),
                                         config=self.config)
 
