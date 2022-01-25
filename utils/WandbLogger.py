@@ -1,11 +1,10 @@
 import wandb
 from utils.constant import COTS_CLASSES
-import torch
 
 class WandbLogger():
     
-    def __init__(self, name, project, config):
-        self.run = wandb.init(name=name, project=project, config=config)
+    def __init__(self, name, entity, project, config):
+        self.run = wandb.init(name=name, project=project, config=config, entity=entity)
 
     def log_metrics(self, metrics):
         """
