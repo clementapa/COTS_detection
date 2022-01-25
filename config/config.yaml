@@ -1,7 +1,8 @@
 comment: Commentaire sur l'entraînement
 
 wandb:
-  name_project: "COTS_detection"
+  name_project: "cots_detection"
+  entity: "cots-detection"
   name_run: 
 
 data:
