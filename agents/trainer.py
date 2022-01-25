@@ -22,7 +22,7 @@ import utils.WandbLogger as WandbLogger
 from datasets.ReefDataset import ReefDataset, collate_fn
 from model.yolox.utils import postprocess
 from model.yolox.data.data_augment import ValTransform
-from torchmetrics.detection.map import MAP
+# from torchmetrics.detection.map import MAP
 from tqdm import tqdm
 
 
