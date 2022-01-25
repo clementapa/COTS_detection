@@ -1,15 +1,23 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from .backbone.ViT import backboneViT
 
 class FasterRCNN(nn.Module):
     def __init__(self,
                  nclasses: int = 2,
+                 backbone_vit=False,
                  pretrained=False,
                  pretrained_backbone=False) -> None:
         super(FasterRCNN, self).__init__()
-        model = models.detection.fasterrcnn_resnet50_fpn(
-            pretrained=pretrained, pretrained_backbone=pretrained_backbone)
+
+        if not backbone_vit:
+            model = models.detection.fasterrcnn_resnet50_fpn(
+                pretrained=pretrained, pretrained_backbone=pretrained_backbone)
+        else:
+            backbone = backboneViT(pretrained)
+            model = FasterRCNN(backbone)
+
         in_features = model.roi_heads.box_predictor.cls_score.in_features
         model.roi_heads.box_predictor = models.detection.faster_rcnn.FastRCNNPredictor(
             in_features, nclasses)

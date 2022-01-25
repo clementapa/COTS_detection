@@ -17,7 +17,13 @@ logger = init_logger("Dataloader", log_level)
 
 
 class ReefDataset(Dataset):
-    def __init__(self, annotations_file, root_dir, train, transforms=None):
+    def __init__(self,
+                 annotations_file,
+                 root_dir,
+                 train,
+                 augmentation=None,
+                 transforms=None,
+                 conv_bbox="pascal_voc"):
         """
         Args:
             annotations_file (string): Path to the csv file with annotations.
@@ -31,6 +37,9 @@ class ReefDataset(Dataset):
         """
         self.root_dir = root_dir
         self.transforms = transforms
+        self.conv_bbox = conv_bbox
+
+        if augmentation is not None : self.augmentation = augmentation
 
         df = pd.read_csv(annotations_file)
         if train:
@@ -43,7 +52,7 @@ class ReefDataset(Dataset):
 
         self.train = train
 
-        if train:
+        if True:
             self.img_annotations = self.img_annotations[
                 self.img_annotations["annotations"] != "[]"]
 
@@ -63,11 +72,18 @@ class ReefDataset(Dataset):
 
         boxes = []
         bounding_boxes = ast.literal_eval(self.img_annotations.iloc[idx, 2])
-        for box in bounding_boxes:
-            boxes.append([
-                box['x'], box['y'], box['x'] + box['width'],
-                box['y'] + box['height']
-            ])
+        if self.conv_bbox != "coco":
+            for box in bounding_boxes:
+                if self.conv_bbox == "pascal_voc":
+                    boxes.append([
+                        box['x'], box['y'], box['x'] + box['width'],
+                        box['y'] + box['height']
+                    ])
+                elif self.conv_bbox == "yolo":  # implemente, choose dataset dans le fichier config
+                    boxes.append(
+                        [box['x'], box['y'], box['width'], box['height']])
+                else:
+                    pass
 
         if boxes == []:
             boxes = torch.zeros((0, 4), dtype=torch.float32)
@@ -79,7 +95,11 @@ class ReefDataset(Dataset):
             labels = torch.ones((boxes.shape[0], ), dtype=torch.int64)
 
         image_id = f"{video_id}-{frame_id}"
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        if self.conv_bbox == "pascal_voc":
+            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        elif self.conv_bbox == "yolo":
+            area = boxes[:, 2] * boxes[:, 3] # FIXME to modify
+
         # suppose all instances are not crowd
         iscrowd = torch.zeros((boxes.shape[0], ), dtype=torch.int64)
 
@@ -101,11 +121,12 @@ class ReefDataset(Dataset):
                 target["boxes"] = torch.as_tensor(transformed['bboxes'],
                                                   dtype=torch.float32)
                 target["labels"] = torch.as_tensor(transformed['class_labels'])
-            else: # negative samples
+            else:  # negative samples
                 if self.train:
                     transforms = []
-                    transforms.append(A.Resize(width=840, height=360))
+                    transforms.append(A.Resize(width=self.augmentation.size.w, height=self.augmentation.size.h))
                     transforms.append(A.HorizontalFlip(p=0.5))
+                    transforms.append(A.VerticalFlip(p=0.5))
                     transforms.append(A.RandomBrightnessContrast(p=0.6))
                     transforms.append(ToTensor())
                     transforms = A.Compose(transforms)
@@ -113,7 +134,7 @@ class ReefDataset(Dataset):
                     img = torch.as_tensor(transformed['image'])
                 else:
                     transforms = []
-                    transforms.append(A.Resize(width=840, height=360))
+                    transforms.append(A.Resize(width=self.augmentation.size.w, height=self.augmentation.size.h))
                     transforms.append(ToTensor())
                     transforms = A.Compose(transforms)
                     transformed = transforms(image=np.array(img))

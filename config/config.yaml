@@ -8,24 +8,28 @@ data:
   csv_file: assets/tensorflow-great-barrier-reef/train.csv
   root_path: assets/tensorflow-great-barrier-reef/train_images
 
+augmentation:
+  size: 
+    w: 1280
+    h: 720
+
 configs:
-  epoch: 30
-  batch_size: 2
+  epoch: 150
+  batch_size: 24
   seed: 1
   checkpoint:
     monitor: "validation/F2_score"
     mode: "max"
   early_stopping:
-    monitor: "validation/F2_score"
-    mode: "max"
-    patience: 8
+    monitor: "train/loss_sum"
+    mode: "min"
+    patience: 80
 
 model:
-  name: model.FasterRCNN.FasterRCNN
+  name: model.RetinaNet.RetinaNet
   params:
     pretrained: True
     pretrained_backbone: True
-    # backbone_vit: True
 
 optimizer:
   name: torch.optim.SGD
@@ -34,10 +38,7 @@ optimizer:
     momentum : 0.9
 
 scheduler:
-  name: torch.optim.lr_scheduler.ReduceLROnPlateau
+  name: torch.optim.lr_scheduler.CosineAnnealingLR
   params:
-    mode: "max"
-    verbose: True
-    factor: 0.1
-    patience: 5
-  monitor: "validation/F2_score"
+    T_max: 150
+    eta_min: 0.00001

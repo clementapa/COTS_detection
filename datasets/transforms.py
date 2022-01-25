@@ -43,17 +43,24 @@ class ToTensor(BasicTransform): # FIXME peut être erreur dû à cette transfor
         image = transToTensor()(img)
         return image
 
-def get_transform(train):
-        
+def get_transform(train, augmentation = None, format="pascal_voc"):
+    ''' 
+    format possible :
+    "pascal_voc" [x_min, y_min, x_max, y_max], 
+    "albumentations" normalized [x_min, y_min, x_max, y_max], 
+    "coco" [x_min, y_min, width, height], 
+    "yolo" normalized [x_center, y_center, width, height]
+    '''
     transforms = []
     
     if train:
-        transforms.append(A.RandomSizedBBoxSafeCrop(width=840, height=360, erosion_rate=0.2))
+        transforms.append(A.RandomSizedBBoxSafeCrop(width=augmentation.size.w, height=augmentation.size.h, erosion_rate=0.2))
         transforms.append(A.HorizontalFlip(p=0.5))
+        transforms.append(A.VerticalFlip(p=0.5))
         transforms.append(A.RandomBrightnessContrast(p=0.6))
     else:
-        transforms.append(A.Resize(width=840, height=360))
+        transforms.append(A.Resize(width=augmentation.size.w, height=augmentation.size.h))
 
     transforms.append(ToTensor())
     
-    return A.Compose(transforms, bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))
+    return A.Compose(transforms, bbox_params=A.BboxParams(format=format, label_fields=['class_labels']))

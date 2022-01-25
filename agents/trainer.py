@@ -1,28 +1,29 @@
-import os, os.path as osp
+import os
+import os.path as osp
 from random import random
 
 import numpy as np
 import torch
+import wandb
 import yaml
 from easydict import EasyDict
 from sklearn.model_selection import StratifiedKFold
 from torchvision import datasets
 
-import wandb
-
 wandb.login()
 
-from tqdm import tqdm
-
-# # Data initialization and loading
-# from data import data_transforms
-from datasets.ReefDataset import ReefDataset, collate_fn
 import datasets.transforms as T
 import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
 import utils.WandbLogger as WandbLogger
+# # Data initialization and loading
+# from data import data_transforms
+from datasets.ReefDataset import ReefDataset, collate_fn
+from model.yolox.utils import postprocess
+from model.yolox.data.data_augment import ValTransform
 from torchmetrics.detection.map import MAP
+from tqdm import tqdm
 
 
 class Trainer():
@@ -184,16 +185,28 @@ class Trainer():
         if True:
             self.logger.info(f"Reading {self.config.data.root_path}")
 
+            conv_bbox = "pascal_voc" if "yolox" not in self.config.model.name else "yolo"
+            format = "pascal_voc" if "yolox" not in self.config.model.name else "coco"
+
             train_set = ReefDataset(
                 self.config.data.csv_file,
                 self.config.data.root_path,
+                augmentation=self.config.augmentation,
                 train=True,
-                transforms=T.get_transform(True),
+                conv_bbox=conv_bbox,
+                transforms=T.get_transform(
+                    True, self.config.augmentation, format=format
+                ),  # FIXME changer format en fonction de fasterRCNN et yolo 
             )
             val_set = ReefDataset(self.config.data.csv_file,
                                   self.config.data.root_path,
+                                  augmentation=self.config.augmentation,
                                   train=False,
-                                  transforms=T.get_transform(False))
+                                  conv_bbox=conv_bbox,
+                                  transforms=T.get_transform(
+                                      False,
+                                      self.config.augmentation,
+                                      format=format))
 
             train_loader = torch.utils.data.DataLoader(
                 train_set,
@@ -290,15 +303,30 @@ class Trainer():
         for batch_idx, (data, targets) in enumerate(
                 train_iterator):  # put coefficient for each loss
 
-            if "yolo" not in self.config.model.name:
+            if "yolox" not in self.config.model.name:
                 images = list(image.to(self.device) for image in data)
                 targets = [{k: v.to(self.device)
                             for k, v in t.items()} for t in targets]
-            else:
-                images = torch.tensor(np.stack(list(data))) # TODO targets for yoloX
+                loss_dict = self.model(images, targets)
+                loss = sum(l for l in loss_dict.values())
 
-            loss_dict = self.model(images, targets) # FIXME error for yoloX 
-            loss = sum(l for l in loss_dict.values())
+            else:
+                images = torch.tensor(np.stack(list(data)))
+                images = images.permute(0, 1, 3, 2)
+                # FIXME error for yoloX : doit être un mutiple de 32
+                # assert images.shape[2] == images.shape[
+                #     3], f"{images.shape[2],images.shape[3]} square images required"
+                targets_yolox = []
+                for t in targets:
+                    a = t['labels'].unsqueeze(1)
+                    b = t['boxes']
+                    te = torch.cat((a, b), 1)
+                    targets_yolox.append(
+                        torch.tensor(np.array(te)).to(self.device))
+
+                loss_dict = self.model(images, targets_yolox)
+                loss = loss_dict['total_loss']
+
             # backpropagation
             self.optimizer.zero_grad()
             loss.backward()
@@ -307,15 +335,25 @@ class Trainer():
             train_iterator.set_description("Training... (loss=%2.5f)" %
                                            loss.data.item())
 
-            loss_dict['loss_sum'] = loss
-            loss_dict = {
-                'train/' + k: v.detach().cpu().numpy()
-                for k, v in loss_dict.items()
-            }
+            if "yolox" not in self.config.model.name:
+                loss_dict['loss_sum'] = loss
+                loss_dict = {
+                    'train/' + k: v.detach().cpu().numpy()
+                    for k, v in loss_dict.items()
+                }
+            else:
+                loss_dict = {
+                    'train/' + k:
+                    v.detach().cpu().numpy() if torch.is_tensor(v) else v
+                    for k, v in loss_dict.items()
+                }
+
             self.wandb_logger.run.log(loss_dict)
 
-            if batch_idx % 100 == 0:
-                self.wandb_logger.log_images((data, targets), "train", 5)
+            if batch_idx % 1 == 0:
+                self.wandb_logger.log_images(
+                    (data, targets), "train", 5
+                )  # FIXME wrong images and targets for yolox (parce que labels pas les mêmes pour l'affichage)
 
             if batch_idx >= self.config.configs.get('it', 100000):
                 break
@@ -346,18 +384,51 @@ class Trainer():
                     images = list(image.to(self.device) for image in data)
                     targets = [{k: v.to(self.device)
                                 for k, v in t.items()} for t in targets]
+
+                    output = self.model(images, targets)
+
+                    pred_bboxes_list = [
+                        np.concatenate((
+                            pred['scores'].unsqueeze(1).cpu().detach().numpy(),
+                            pred['boxes'].cpu().detach().numpy()),
+                                       axis=1) for pred in output
+                    ]
+
                 else:
-                    pass
+                    images = torch.tensor(np.stack(list(data)))
+                    images = images.permute(0, 1, 3, 2)
 
-                output = self.model(images, targets)
+                    targets_yolox = []
+                    for t in targets:
+                        a = t['labels'].unsqueeze(1)
+                        b = t['boxes']
+                        te = torch.cat((a, b), 1)
+                        targets_yolox.append(
+                            torch.tensor(np.array(te)).to(self.device))
 
+                    output = self.model(images, targets_yolox)
+                    outputs = postprocess(
+                        output,
+                        self.config.model.params.num_classes,
+                        self.config.model.inf_params.confthre,
+                        self.config.model.inf_params.nmsthre,
+                        class_agnostic=True)
+                    # (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
+                    # TODO compute pred_bboxes_list
+                    pred_bboxes_list = [
+                        np.array([[0, 0, 0, 0, 0]])
+                        if pred is None else np.array(
+                            torch.cat(
+                                (pred[:, 5].unsqueeze(1),
+                                 pred[:, 0].unsqueeze(1), pred[:,
+                                                               1].unsqueeze(1),
+                                 (pred[:, 2] - pred[:, 0]).unsqueeze(1),
+                                 (pred[:, 3] - pred[:, 1]).unsqueeze(1)),
+                                dim=1)) for pred in outputs
+                    ]
+
+                # Update metrics
                 gt_bboxes_list = [t['boxes'].cpu().numpy() for t in targets]
-                pred_bboxes_list = [
-                    np.concatenate(
-                        (pred['scores'].unsqueeze(1).cpu().detach().numpy(),
-                         pred['boxes'].cpu().detach().numpy()),
-                        axis=1) for pred in output
-                ]
 
                 metrics_inst["F2_score"].update(gt_bboxes_list,
                                                 pred_bboxes_list)
@@ -372,7 +443,7 @@ class Trainer():
 
                 # # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
                 # metrics_inst['MAP'].update(output, targets)
-                if batch_idx % 100 == 0:
+                if batch_idx % 1 == 0:
                     self.wandb_logger.log_images((data, targets),
                                                  "validation",
                                                  5,
@@ -449,8 +520,11 @@ class Trainer():
                 {"lr": self.optimizer.param_groups[0]['lr']})
 
             if self.config.get('scheduler'):
-                self.scheduler.step(metrics[self.config.scheduler.get(
-                    'monitor', None)])
+                if "LinearWarmupCosineAnnealingLR" in self.config.scheduler.name:
+                    self.scheduler.step(real_epoch)
+                else:
+                    self.scheduler.step(metrics[self.config.scheduler.get(
+                        'monitor', None)])
 
             if hasattr(self, 'fold'):
                 self.results_k_folds[str(self.fold)].append(metrics)

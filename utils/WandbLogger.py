@@ -35,7 +35,7 @@ class WandbLogger():
             if outputs != None:
                 output = outputs[i]
                 box_data_preds = []
-                boxes = output["boxes"]
+                boxes = output["boxes"] # FIXME différent pour yolo 
                 labels = output["labels"]
                 scores = output["scores"]
                 for box, label, score in zip(boxes, labels, scores):
@@ -54,8 +54,8 @@ class WandbLogger():
                 dict_boxes["predictions"] = {'box_data': box_data_preds, "class_labels": COTS_CLASSES}
 
             box_data_gt = []
-            boxes = target['boxes']
-            labels = target['labels']
+            boxes = target['boxes'] # FIXME différent pour yolo 
+            labels = target['labels'] # FIXME différent pour yolo 
             for box, label in zip(boxes, labels):
                 
                 dict_gt = {}
@@ -65,7 +65,7 @@ class WandbLogger():
                 dict_gt["position"] = position
                 dict_gt["class_id"] = int(label)
                 dict_gt["box_caption"] = box_caption
-                dict_gt["domain"] = "pixel"
+                dict_gt["domain"] = "pixel" # FIXME différent pour yolo je crois
 
                 box_data_gt.append(dict_gt)
             
