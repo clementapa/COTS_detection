@@ -55,10 +55,11 @@ class Trainer():
 
         self.fast_dev_run = args.fast_dev_run
 
-        self.wandb_logger = WandbLogger(project=self.config.wandb.name_project,
-                                        entity=self.config.wandb.get("entity") if args.no_test else None,
-                                        name=self.config.wandb.get("name_run"),
-                                        config=self.config)
+        self.wandb_logger = WandbLogger(
+            project=self.config.wandb.name_project,
+            entity=self.config.wandb.get("entity") if args.no_test else None,
+            name=self.config.wandb.get("name_run"),
+            config=self.config)
 
         self.logger = logger
         ##############################
@@ -351,7 +352,7 @@ class Trainer():
 
             self.wandb_logger.run.log(loss_dict)
 
-            if batch_idx % 1 == 0:
+            if batch_idx % 20 == 0:
                 self.wandb_logger.log_images(
                     (data, targets), "train", 5
                 )  # FIXME wrong images and targets for yolox (parce que labels pas les mêmes pour l'affichage)
@@ -521,11 +522,11 @@ class Trainer():
                 {"lr": self.optimizer.param_groups[0]['lr']})
 
             if self.config.get('scheduler'):
-                if "LinearWarmupCosineAnnealingLR" in self.config.scheduler.name:
-                    self.scheduler.step(real_epoch)
+                if self.config.scheduler.get('monitor'):
+                    self.scheduler.step(
+                        metrics[self.config.scheduler.get('monitor')])
                 else:
-                    self.scheduler.step(metrics[self.config.scheduler.get(
-                        'monitor', None)])
+                    self.scheduler.step()
 
             if hasattr(self, 'fold'):
                 self.results_k_folds[str(self.fold)].append(metrics)
