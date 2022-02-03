@@ -1,4 +1,4 @@
-# Crown of Thorns starfish detection project by Clément Apavou & Guillaume Serieys
+# Crown of Thorns starfish detection project by Clément Apavou
 
 ## Intro
 Kaggle challenge TensorFlow - Help Protect the Great Barrier Reef. 
@@ -15,7 +15,7 @@ Split possible:
 -    totally random (loss of temporality)
 -    by videos: train: 0 & 1, val: 2 ?
 -    by sequences
-### To add (clément)
+### To add 
 - [x] Class wandblogger:
      - [X] log all in wandblogger (checkpoint/weight, metrics, config)
      - [X] visual images predictions of training (correctly) afficher n dernières images à la fin de chaque batch
