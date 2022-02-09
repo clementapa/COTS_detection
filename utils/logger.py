@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 import logging
 
 class CustomFormatter(logging.Formatter):

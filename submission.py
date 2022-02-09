@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 import sys
 
 import argparse

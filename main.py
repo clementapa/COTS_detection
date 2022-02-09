@@ -1,7 +1,9 @@
+'''
+    Author: Clément APAVOU
+'''
 from agents.trainer import Trainer
 from utils.logger import init_logger
 import argparse
-from easydict import EasyDict
 
 parser = argparse.ArgumentParser(
     description='Script to launch the training',

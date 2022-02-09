@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 import wandb
 from utils.constant import COTS_CLASSES
 

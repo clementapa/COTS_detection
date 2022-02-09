@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 import torch
 import os, os.path as osp
 import wandb

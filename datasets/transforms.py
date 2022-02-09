@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 import random
 
 from torchvision.transforms import functional as F
@@ -31,7 +34,7 @@ class RandomHorizontalFlip(object):
         return image, target
 
 
-class ToTensor(BasicTransform): # FIXME peut être erreur dû à cette transformation, faut-il normaliser les images ?
+class ToTensor(BasicTransform):
     def __init__(self, always_apply=True, p=1):
         super().__init__(always_apply=always_apply, p=p)
     

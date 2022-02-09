@@ -1,23 +1,26 @@
+'''
+    Author: Clément APAVOU
+'''
+import datasets.transforms as T
 import numpy as np
 import torch
-import wandb
-import yaml
-from easydict import EasyDict
-
-wandb.login()
-
-import datasets.transforms as T
 import utils.callbacks as callbacks
 import utils.metrics as ut_metrics
 import utils.utils as utils
 import utils.WandbLogger as WandbLogger
-# # Data initialization and loading
-# from data import data_transforms
+import wandb
+import yaml
 from datasets.ReefDataset import ReefDataset, collate_fn
+from easydict import EasyDict
 from model.yolox.data.data_augment import ValTransform
 from model.yolox.utils import postprocess
 from torchmetrics.detection.map import MAP
 from tqdm import tqdm
+
+wandb.login()
+
+# # Data initialization and loading
+# from data import data_transforms
 
 
 class Trainer():
@@ -111,7 +114,8 @@ class Trainer():
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-            if hasattr(self, 'loss'): self.loss = checkpoint['loss']
+            if hasattr(self, 'loss'):
+                self.loss = checkpoint['loss']
             if hasattr(self, 'scheduler'):
                 self.scheduler.load_state_dict(
                     checkpoint['scheduler_state_dict'])
@@ -135,17 +139,17 @@ class Trainer():
             conv_bbox=conv_bbox,
             transforms=T.get_transform(
                 True, self.config.augmentation, format=format
-            ),  # FIXME changer format en fonction de fasterRCNN et yolo 
+            ),  #  FIXME changer format en fonction de fasterRCNN et yolo
         )
         val_set = ReefDataset(self.config.data.csv_file,
-                                self.config.data.root_path,
-                                augmentation=self.config.augmentation,
-                                train=False,
-                                conv_bbox=conv_bbox,
-                                transforms=T.get_transform(
-                                    False,
-                                    self.config.augmentation,
-                                    format=format))
+                              self.config.data.root_path,
+                              augmentation=self.config.augmentation,
+                              train=False,
+                              conv_bbox=conv_bbox,
+                              transforms=T.get_transform(
+                                  False,
+                                  self.config.augmentation,
+                                  format=format))
 
         train_loader = torch.utils.data.DataLoader(
             train_set,
@@ -235,7 +239,7 @@ class Trainer():
             if batch_idx == 0:
                 self.wandb_logger.log_images(
                     (data, targets), "train", 5
-                )  # FIXME wrong images and targets for yolox (parce que labels pas les mêmes pour l'affichage)
+                )  #  FIXME wrong images and targets for yolox (parce que labels pas les mêmes pour l'affichage)
 
             if batch_idx >= self.config.configs.get('it', 100000):
                 break
@@ -273,7 +277,7 @@ class Trainer():
                         np.concatenate((
                             pred['scores'].unsqueeze(1).cpu().detach().numpy(),
                             pred['boxes'].cpu().detach().numpy()),
-                                       axis=1) for pred in output
+                            axis=1) for pred in output
                     ]
 
                 else:
@@ -314,17 +318,20 @@ class Trainer():
 
                 metrics_inst["F2_score"].update(gt_bboxes_list,
                                                 pred_bboxes_list)
-                
-                # MAP 
+
+                # MAP
                 for t in targets:
                     t['boxes'] = t['boxes'].cpu()
-                    if len(t['boxes'])==0:
-                        t['labels'] = torch.tensor(np.array([]), dtype=torch.int64)
+                    if len(t['boxes']) == 0:
+                        t['labels'] = torch.tensor(
+                            np.array([]), dtype=torch.int64)
                     else:
                         t['labels'] = t['labels'].cpu()
-                    targets_map = {'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()}
+                    targets_map = {
+                        'boxes': t['boxes'].cpu(), 'labels': t['labels'].cpu()}
 
-                targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
+                targets_map = [
+                    {'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
                 metrics_inst['MAP'].update(output, targets_map)
 
                 if batch_idx == 0:
@@ -351,7 +358,7 @@ class Trainer():
         self.logger.info("Launch training, start epoch : {}".format(
             self.start_epoch))
 
-        ##### Init Metrics validation # TODO metrics instance {"train": , "validation": } en variable de classe
+        # Init Metrics validation # TODO metrics instance {"train": , "validation": } en variable de classe
         metrics_instance = {
             "F2_score":
             ut_metrics.F2_score_competition(compute_on_step=False).to(
@@ -359,7 +366,7 @@ class Trainer():
             "MAP": MAP(compute_on_step=False).to(self.device)
         }
 
-        ##### Init Early stopping
+        # Init Early stopping
         if self.config.configs.get('early_stopping'):
             early_stopping = callbacks.EarlyStopping(
                 monitor=self.config.configs.early_stopping.monitor,
@@ -367,7 +374,7 @@ class Trainer():
                 patience=self.config.configs.early_stopping.patience,
                 logger=self.logger)
 
-        ##### Init Model checkpoint
+        # Init Model checkpoint
         model_checkpoint = callbacks.ModelCheckpoint(
             monitor=self.config.configs.checkpoint.monitor,
             mode=self.config.configs.checkpoint.mode,
@@ -413,13 +420,13 @@ class Trainer():
             if hasattr(self, 'fold'):
                 self.results_k_folds[str(self.fold)].append(metrics)
 
-            ##### Update Early stopping
+            # Update Early stopping
             if self.config.configs.get('early_stopping'):
                 res = early_stopping.update(metrics)
                 if res != None:
                     break
 
-            ##### Checkpoint
+            # Checkpoint
             model_checkpoint.save_checkpoint(
                 self,
                 metrics,

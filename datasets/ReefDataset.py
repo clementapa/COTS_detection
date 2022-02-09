@@ -1,7 +1,9 @@
+'''
+    Author: Clément APAVOU
+'''
 import os, os.path as osp
 import ast
 from PIL import Image
-import cv2
 import pandas as pd
 
 import torch

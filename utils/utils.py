@@ -1,3 +1,6 @@
+'''
+    Author: Clément APAVOU
+'''
 from importlib import import_module
 import cv2
 
