@@ -13,8 +13,8 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 </p>
 
 <p align="center">
-  <img src="assets/readme/imageRD.png" width="400" height="200"/>
-  <img src="assets/readme/COTS_outbreak.jpg" width="400" height="200"/>
+  <img src="assets/readme/imageRD.png" width="430" height="200"/>
+  <img src="assets/readme/COTS_outbreak.jpg" width="430" height="200"/>
 </p>
 <p align="center">
 <em> Crown-of-thorns starfishs (left) - A Crown-of-thorns starfish outbreak (right)</em>
@@ -23,14 +23,14 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 ## :tropical_fish: Dataset
 
 <p align="center">
-  <img src="assets/readme/freq_seq_video.png" width="400" height="200"/>
-  <img src="assets/readme/bb_seq_video.png" width="400" height="200"/>
+  <img src="assets/readme/freq_seq_video.png" width="430" height="200"/>
+  <img src="assets/readme/bb_seq_video.png" width="430" height="200"/>
 </p>
 <p align="center">
 <em> Number of frames per video and per sequence in the COTS dataset (left) - Number of bounding boxes per video and per sequence in the COTS dataset. (right)</em>
 </p>
 
-## :fish: Features of the repository
+## :fish: Features of this repository
 - Analyse dataset (split train/validation) : ```data_analysis.ipynb ```
 - Dataset PyTorch for the COTS dataset : ```datasets/ReefDataset.py```
 - Data augmentation with albumentation : ```datasets/transforms.py```
@@ -44,7 +44,7 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 - Possibility to use any optimizer and scheduler (following the config file template)
 - Option fast dev run to debug (only 1 batch of train and validation are processed)
 
-## :hammer: How does it work?  
+## :pushpin: How does it work?  
 
 1. Create a config file in ```config/``` by following templates
 2. Launch the script ```main.py``` with the config file : 
@@ -78,3 +78,7 @@ On kaggle :
 ```
 cp albumentations/bbox_utils.py /opt/conda/lib/python3.7/site-packages/albumentations/augmentations/bbox_utils.py
 ```
+
+## :hammer: Work in progress ...
+- [X] MAP metric
+- [ ] YOLOX

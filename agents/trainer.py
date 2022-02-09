@@ -16,7 +16,7 @@ import utils.WandbLogger as WandbLogger
 from datasets.ReefDataset import ReefDataset, collate_fn
 from model.yolox.data.data_augment import ValTransform
 from model.yolox.utils import postprocess
-# from torchmetrics.detection.map import MAP
+from torchmetrics.detection.map import MAP
 from tqdm import tqdm
 
 
@@ -316,16 +316,16 @@ class Trainer():
                                                 pred_bboxes_list)
                 
                 # MAP 
-                # for t in targets:
-                #     t['boxes'] = t['boxes'].cpu()
-                #     if len(t['boxes'])==0:
-                #         t['labels'] = torch.tensor(np.array([]), dtype=torch.int64)
-                #     else:
-                #         t['labels'] = t['labels'].cpu()
-                #     # targets_map = {'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()}
+                for t in targets:
+                    t['boxes'] = t['boxes'].cpu()
+                    if len(t['boxes'])==0:
+                        t['labels'] = torch.tensor(np.array([]), dtype=torch.int64)
+                    else:
+                        t['labels'] = t['labels'].cpu()
+                    targets_map = {'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()}
 
-                # # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
-                # metrics_inst['MAP'].update(output, targets)
+                targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
+                metrics_inst['MAP'].update(output, targets_map)
 
                 if batch_idx == 0:
                     self.wandb_logger.log_images((data, targets),
@@ -356,7 +356,7 @@ class Trainer():
             "F2_score":
             ut_metrics.F2_score_competition(compute_on_step=False).to(
                 self.device),
-            # "MAP": MAP(compute_on_step=False).to(self.device)
+            "MAP": MAP(compute_on_step=False).to(self.device)
         }
 
         ##### Init Early stopping

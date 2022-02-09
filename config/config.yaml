@@ -16,7 +16,7 @@ augmentation:
 
 configs:
   epoch: 150
-  batch_size: 24
+  batch_size: 1
   seed: 1
   checkpoint:
     monitor: "validation/F2_score"
