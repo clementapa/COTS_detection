@@ -1,4 +1,4 @@
-# Build an object detector to help the Great Barrier Reef :ocean:
+# Building an object detector to help the Great Barrier Reef :ocean:
 
 > Author : Clément Apavou
 
