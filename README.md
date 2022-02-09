@@ -44,7 +44,7 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 - Possibility to use any optimizer and scheduler (following the config file template)
 - Option fast dev run to debug (only 1 batch of train and validation are processed)
 
-## :dart: Use 
+## :hammer: How does it work?  
 
 1. Create a config file in ```config/``` by following templates
 2. Launch the script ```main.py``` with the config file : 
@@ -59,16 +59,22 @@ And you can use the ```--fast_dev_run``` option
 
 The config file is read by the ```Trainer``` in ```agents/trainer.py``` which launch the training.
 
+## :dolphin: Experiments
+All experiments are available on wandb : [![](https://github.com/wandb/assets/blob/main/wandb-github-badge-gradient.svg)](https://wandb.ai/cots-detection/COTS_detection?workspace=user-clementapa)
+
+Faster R-CNN:
+- gallant-morning : without negative samples => 0.354 F2-score competition score (detection threshold 0.5) & 0.4027 F2-score validation (video 2)
+- dry-microwave : with negative samples
+- volcanic-water : without negative samples
+
+RetinaNet: (different data augmentation and hyperparameters)
+- dry-armadillo
+- fallen-sun 
+- smart-music 
+- fiery-yogurt
+
 ## :ambulance: Fix albumentation error in bbox_utils.py on kaggle 
 On kaggle :
 ```
 cp albumentations/bbox_utils.py /opt/conda/lib/python3.7/site-packages/albumentations/augmentations/bbox_utils.py
 ```
-
-## :dolphin: Experiments
-All experiments are available on wandb : [![](https://github.com/wandb/assets/blob/main/wandb-github-badge-gradient.svg)](https://wandb.ai/cots-detection/COTS_detection?workspace=user-clementapa)
-
-- gallant-morning : Faster R-CNN without negative samples => 0.354 F2-score competition score (detection threshold 0.5) & 0.4027 F2-score validation (video 2)
-- dry-microwave : Faster R-CNN with negative samples
-- volcanic-water : Faster R-CNN without negative samples
-- dry-armadillo : RetinaNet
