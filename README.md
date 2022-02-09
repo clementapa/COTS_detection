@@ -6,7 +6,7 @@
 The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns starfish that devour corals too quickly. To protect the reef, the Great Barrier Reef foundation and the Australia's national science agency has partnered with Google to improve ineffective traditional survey methods. A Kaggle research code competition was created to expedite the research for an effective video survey method. The goal is to build an object detector capable of predicting the presence and position of crown-of-thorns starfish in underwater image sequences. This object detector will be used to determine the locations of outbreaks, so that methods can be applied to reduce their numbers in these locations. 
 
 <p align="center">
-  <img src="assets/readme/seq_60754.gif" width="500" height="300"/>
+  <img src="assets/readme/seq_60754.gif" width="900" height="400"/>
 </p>
 <p align="center">
 <em> Part of the sequence 60754 (COTS annotations) of the COTS dataset.</em>
