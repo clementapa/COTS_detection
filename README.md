@@ -1,4 +1,4 @@
-# Build an object detector to help the Freat Barrier Reef :ocean:
+# Build an object detector to help the Great Barrier Reef :ocean:
 
 > Author : Clément Apavou
 
@@ -66,8 +66,9 @@ cp albumentations/bbox_utils.py /opt/conda/lib/python3.7/site-packages/albumenta
 ```
 
 ## :dolphin: Experiments
+All experiments are available on wandb : [![](https://github.com/wandb/assets/blob/main/wandb-github-badge-gradient.svg)](https://wandb.ai/cots-detection/COTS_detection?workspace=user-clementapa)
+
 - gallant-morning : Faster R-CNN without negative samples => 0.354 F2-score competition score (detection threshold 0.5) & 0.4027 F2-score validation (video 2)
 - dry-microwave : Faster R-CNN with negative samples
 - volcanic-water : Faster R-CNN without negative samples
 - dry-armadillo : RetinaNet
-[![](https://github.com/wandb/assets/blob/main/wandb-github-badge-gradient.svg)](https://wandb.ai/cots-detection/COTS_detection?workspace=user-clementapa)
