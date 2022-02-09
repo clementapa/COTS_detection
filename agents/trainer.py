@@ -1,14 +1,8 @@
-import os
-import os.path as osp
-from random import random
-
 import numpy as np
 import torch
 import wandb
 import yaml
 from easydict import EasyDict
-from sklearn.model_selection import StratifiedKFold
-from torchvision import datasets
 
 wandb.login()
 
@@ -20,8 +14,8 @@ import utils.WandbLogger as WandbLogger
 # # Data initialization and loading
 # from data import data_transforms
 from datasets.ReefDataset import ReefDataset, collate_fn
-from model.yolox.utils import postprocess
 from model.yolox.data.data_augment import ValTransform
+from model.yolox.utils import postprocess
 # from torchmetrics.detection.map import MAP
 from tqdm import tqdm
 
@@ -320,7 +314,8 @@ class Trainer():
 
                 metrics_inst["F2_score"].update(gt_bboxes_list,
                                                 pred_bboxes_list)
-
+                
+                # MAP 
                 # for t in targets:
                 #     t['boxes'] = t['boxes'].cpu()
                 #     if len(t['boxes'])==0:
@@ -331,6 +326,7 @@ class Trainer():
 
                 # # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
                 # metrics_inst['MAP'].update(output, targets)
+
                 if batch_idx == 0:
                     self.wandb_logger.log_images((data, targets),
                                                  "validation",
