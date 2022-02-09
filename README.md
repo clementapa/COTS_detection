@@ -1,4 +1,4 @@
-# Build an object detector to help the Great Barrier Reef :ocean:
+# Building an object detector to help the Great Barrier Reef :ocean:
 
 > Author : Clément Apavou
 
@@ -45,7 +45,7 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 - Implementation of the F2-score metrics of the competition with [torchmetrics](https://torchmetrics.readthedocs.io/en/latest/) : ```utils/metrics.py```
 - Beautiful terminal logger : ```utils/logger.py```
 - Implementation of callbacks for early stopping and save weights by monitoring a metric : ```utils/callbacks.py```
-- Faster R-CNN & RetinaNet from torchvision models (fine tuning implementation): ```models/FasterRCNN.py``` & ```models/RetinaNet.py```
+- Faster R-CNN & RetinaNet from torchvision models (fine tuning implementation): ```model/FasterRCNN.py``` & ```model/RetinaNet.py```
 - Possibility to use any optimizer and scheduler (following the config file template)
 - Option fast dev run to debug (only 1 batch of train and validation are processed)
 
