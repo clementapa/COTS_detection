@@ -2,6 +2,8 @@
 
 > Author : Clément Apavou
 
+Kaggle Research Code Competition: [TensorFlow - Help Protect the Great Barrier Reef](https://www.kaggle.com/c/tensorflow-great-barrier-reef/leaderboard)
+
 ## :tropical_fish: Introduction
 The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns starfish that devour corals too quickly. To protect the reef, the Great Barrier Reef foundation and the Australia's national science agency has partnered with Google to improve ineffective traditional survey methods. A Kaggle research code competition was created to expedite the research for an effective video survey method. The goal is to build an object detector capable of predicting the presence and position of crown-of-thorns starfish in underwater image sequences. This object detector will be used to determine the locations of outbreaks, so that methods can be applied to reduce their numbers in these locations. 
 
@@ -13,8 +15,8 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 </p>
 
 <p align="center">
-  <img src="assets/readme/imageRD.png" width="430" height="200"/>
-  <img src="assets/readme/COTS_outbreak.jpg" width="430" height="200"/>
+  <img src="assets/readme/imageRD.png" width="400" height="200"/>
+  <img src="assets/readme/COTS_outbreak.jpg" width="400" height="200"/>
 </p>
 <p align="center">
 <em> Crown-of-thorns starfishs (left) - A Crown-of-thorns starfish outbreak (right)</em>
@@ -23,8 +25,8 @@ The Australia's Greet Barrier Reef is threatened by outbreaks of crown-of-thorns
 ## :tropical_fish: Dataset
 
 <p align="center">
-  <img src="assets/readme/freq_seq_video.png" width="430" height="200"/>
-  <img src="assets/readme/bb_seq_video.png" width="430" height="200"/>
+  <img src="assets/readme/freq_seq_video.png" width="400" height="200"/>
+  <img src="assets/readme/bb_seq_video.png" width="400" height="200"/>
 </p>
 <p align="center">
 <em> Number of frames per video and per sequence in the COTS dataset (left) - Number of bounding boxes per video and per sequence in the COTS dataset. (right)</em>
