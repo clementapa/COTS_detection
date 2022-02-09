@@ -2,6 +2,9 @@
 
 > Author : Clément Apavou
 
+![Python](https://img.shields.io/badge/Python-green.svg?style=plastic)
+![PyTorch](https://img.shields.io/badge/PyTorch-orange.svg?style=plastic)
+
 Kaggle Research Code Competition: [TensorFlow - Help Protect the Great Barrier Reef](https://www.kaggle.com/c/tensorflow-great-barrier-reef/leaderboard)
 
 ## :tropical_fish: Introduction
