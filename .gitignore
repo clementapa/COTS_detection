@@ -136,3 +136,6 @@ assets/tensorflow*
 *.pth
 *.mp4
 *.json
+*.pt
+*.zip
+*.json

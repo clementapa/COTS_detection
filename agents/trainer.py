@@ -121,172 +121,58 @@ class Trainer():
             if hasattr(self, 'scheduler'):
                 self.scheduler.load_state_dict(
                     checkpoint['scheduler_state_dict'])
-        #     if (args.checkpoint):
-        #         self.start_epoch = checkpoint['epoch']
-        #     else:
-        #         self.start_epoch = 1
-        # else:
+
         self.start_epoch = 1
 
         ##############################
         #####  PREPARATION DATA #####
         ##############################
-        # if self.config.configs.get("k_folds"):
 
-        #     self.k_folds = self.config.configs.k_folds
-        #     self.results_k_folds = {}
+        self.logger.info(f"Reading {self.config.data.root_path}")
 
-        #     logger.info(f"K-fold Cross Validation with K={self.k_folds}")
+        conv_bbox = "pascal_voc" if "yolox" not in self.config.model.name else "yolo"
+        format = "pascal_voc" if "yolox" not in self.config.model.name else "coco"
 
-        #     train_set = datasets.ImageFolder(
-        #         osp.join(args["<data_repo>"], 'train_images'))
+        train_set = ReefDataset(
+            self.config.data.csv_file,
+            self.config.data.root_path,
+            augmentation=self.config.augmentation,
+            train=True,
+            conv_bbox=conv_bbox,
+            transforms=T.get_transform(
+                True, self.config.augmentation, format=format
+            ),  # FIXME changer format en fonction de fasterRCNN et yolo 
+        )
+        val_set = ReefDataset(self.config.data.csv_file,
+                                self.config.data.root_path,
+                                augmentation=self.config.augmentation,
+                                train=False,
+                                conv_bbox=conv_bbox,
+                                transforms=T.get_transform(
+                                    False,
+                                    self.config.augmentation,
+                                    format=format))
 
-        #     val_set = datasets.ImageFolder(
-        #         osp.join(args["<data_repo>"], 'val_images'))
+        train_loader = torch.utils.data.DataLoader(
+            train_set,
+            batch_size=self.config.configs.batch_size,
+            shuffle=True,
+            collate_fn=collate_fn,
+            num_workers=args.num_workers)
+        val_loader = torch.utils.data.DataLoader(
+            val_set,
+            batch_size=self.config.configs.batch_size,
+            shuffle=False,
+            collate_fn=collate_fn,
+            num_workers=args.num_workers)
 
-        #     dataset = torch.utils.data.ConcatDataset([train_set, val_set])
-
-        # elif self.config.configs.get("dataset_repartition"):
-
-        #     dataset = datasets.ImageFolder(
-        #         osp.join(args["<data_repo>"], 'images'))
-
-        #     train_subset, val_subset = utils.get_subsets(
-        #         dataset, fold=self.config.configs.dataset_repartition)
-
-        #     train_loader = torch.utils.data.DataLoader(
-        #         utils.WrapperDataset(train_subset,
-        #                              transform=data_transforms['train']),
-        #         batch_size=self.config.configs.batch_size,
-        #         shuffle=True,
-        #         num_workers=int(args["--num_workers"]))
-
-        #     val_loader = torch.utils.data.DataLoader(
-        #         utils.WrapperDataset(val_subset,
-        #                              transform=data_transforms['val']),
-        #         batch_size=self.config.configs.batch_size,
-        #         shuffle=False,
-        #         num_workers=int(args["--num_workers"]))
-
-        #     self.logger.info("train : {}, validation : {}".format(
-        #         len(train_loader.dataset), len(val_loader.dataset)))
-
-        #     utils.repartition_database(train_loader.dataset.dataset,
-        #                                val_loader.dataset.dataset)
-
-        # else:
-        # train_loader = torch.utils.data.DataLoader(
-        #     datasets.ImageFolder(osp.join(args["<data_repo>"],'train_images'),
-        #                         transform=data_transforms['train']),
-        #     batch_size=self.config.configs.batch_size, shuffle=True, num_workers=int(args["--num_workers"]))
-
-        # val_loader = torch.utils.data.DataLoader(
-        #     datasets.ImageFolder(osp.join(args["<data_repo>"],'val_images'),
-        #                         transform=data_transforms['val']),
-        #     batch_size=self.config.configs.batch_size, shuffle=False, num_workers=int(args["--num_workers"]))
-        if True:
-            self.logger.info(f"Reading {self.config.data.root_path}")
-
-            conv_bbox = "pascal_voc" if "yolox" not in self.config.model.name else "yolo"
-            format = "pascal_voc" if "yolox" not in self.config.model.name else "coco"
-
-            train_set = ReefDataset(
-                self.config.data.csv_file,
-                self.config.data.root_path,
-                augmentation=self.config.augmentation,
-                train=True,
-                conv_bbox=conv_bbox,
-                transforms=T.get_transform(
-                    True, self.config.augmentation, format=format
-                ),  # FIXME changer format en fonction de fasterRCNN et yolo 
-            )
-            val_set = ReefDataset(self.config.data.csv_file,
-                                  self.config.data.root_path,
-                                  augmentation=self.config.augmentation,
-                                  train=False,
-                                  conv_bbox=conv_bbox,
-                                  transforms=T.get_transform(
-                                      False,
-                                      self.config.augmentation,
-                                      format=format))
-
-            train_loader = torch.utils.data.DataLoader(
-                train_set,
-                batch_size=self.config.configs.batch_size,
-                shuffle=True,
-                collate_fn=collate_fn,
-                num_workers=args.num_workers)
-            val_loader = torch.utils.data.DataLoader(
-                val_set,
-                batch_size=self.config.configs.batch_size,
-                shuffle=False,
-                collate_fn=collate_fn,
-                num_workers=args.num_workers)
-
-            self.logger.info("train : {}, validation : {}".format(
-                len(train_loader.dataset), len(val_loader.dataset)))
+        self.logger.info("train : {}, validation : {}".format(
+            len(train_loader.dataset), len(val_loader.dataset)))
 
         ##############################
         #####    ENTRAINEMENT    #####
         ##############################
 
-        # if self.config.configs.get("k_folds"):
-        #     # Define the K-fold Cross Validator
-        #     kfold = StratifiedKFold(
-        #         n_splits=self.k_folds,
-        #         shuffle=True,
-        #         random_state=self.config.configs.get("seed", 1)
-        #     )  # StratifiedKFold preserve the percentage of sample for each class
-        #     labels = [label for img, label in dataset]
-        #     # K-fold Cross Validation model evaluation
-        #     for fold, (train_ids,
-        #                val_ids) in enumerate(kfold.split(dataset, labels)):
-        #         self.logger.info(f'FOLD {fold}')
-
-        #         self.fold = fold
-        #         self.results_k_folds[str(self.fold)] = []
-        #         utils.reset_weights(
-        #             self.model, self.config.model.params.get('freeze', False))
-
-        #         train_subset = torch.utils.data.Subset(dataset, train_ids)
-        #         val_subset = torch.utils.data.Subset(dataset, val_ids)
-
-        #         # Define data loaders for training and testing data in this fold
-        #         train_loader = torch.utils.data.DataLoader(
-        #             utils.WrapperDataset(train_subset,
-        #                                  transform=data_transforms['train']),
-        #             batch_size=self.config.configs.batch_size,
-        #             shuffle=True,
-        #             num_workers=int(args["--num_workers"]))
-
-        #         val_loader = torch.utils.data.DataLoader(
-        #             utils.WrapperDataset(val_subset,
-        #                                  transform=data_transforms['val']),
-        #             batch_size=self.config.configs.batch_size,
-        #             shuffle=False,
-        #             num_workers=int(args["--num_workers"]))
-
-        #         self.logger.info("train : {}, validation : {}".format(
-        #             len(train_loader.dataset), len(val_loader.dataset)))
-
-        #         utils.repartition_database(train_loader.dataset.dataset,
-        #                                    val_loader.dataset.dataset)
-
-        #         self.train_epoch(train_loader,
-        #                          val_loader,
-        #                          relaunch=args["--relaunch"])
-
-        #     self.logger.info(f'Results Fold : {self.results_k_folds}')
-        #     average = 0
-        #     for k, results in self.results_k_folds.items():
-        #         average += max(results)
-        #         self.logger.info(
-        #             f'Max Accuracy Fold {k} : {max(results)} Epoch : {results.index(max(results))}'
-        #         )
-        #     average /= self.k_folds
-        #     self.logger.info(f'Average Accuracy on {k} Fold: {average}')
-
-        # else:
         self.train_epoch(train_loader, val_loader, relaunch=args.relaunch)
 
     def train(self, epoch, train_loader):
@@ -352,7 +238,7 @@ class Trainer():
 
             self.wandb_logger.run.log(loss_dict)
 
-            if batch_idx % 20 == 0:
+            if batch_idx == 0:
                 self.wandb_logger.log_images(
                     (data, targets), "train", 5
                 )  # FIXME wrong images and targets for yolox (parce que labels pas les mêmes pour l'affichage)
@@ -445,7 +331,7 @@ class Trainer():
 
                 # # targets_map = [{'boxes': t['boxes'].cpu(), 'labels':t['labels'].cpu()} for t in targets]
                 # metrics_inst['MAP'].update(output, targets)
-                if batch_idx % 1 == 0:
+                if batch_idx == 0:
                     self.wandb_logger.log_images((data, targets),
                                                  "validation",
                                                  5,
